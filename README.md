@@ -44,11 +44,11 @@ HemaGrid AI is a distributed, connected cold chain monitoring and donor verifica
 This repository contains the system specification and individual developer README files. Each contributor owns a specific, isolated module to enable parallel development.
 
 *   **[`IMPLEMENTATION_PLAN.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/IMPLEMENTATION_PLAN.md)** - Master engineering architecture and integration specs.
-*   **[`backend/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/backend/README.md)** - Core Backend Platform Hub (FastAPI, SQLite, WebSockets).
-*   **[`dashboard/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/dashboard/README.md)** - Frontend Dashboard UI (React, TypeScript, TailwindCSS).
-*   **[`ai-engine/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/ai-engine/README.md)** - AI Intelligence forecasting engine (Scikit-Learn, ONNX).
-*   **[`face-recognition/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/face-recognition/README.md)** - Donor Verification face check (OpenCV, MediaPipe).
-*   **[`hardware/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/hardware/README.md)** - Smart Cold Box IoT node (Arduino C++).
+*   **[`backend/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/backend/README.md) (Mithun)** - **Backend Platform:** FastAPI backend, SQLite database schemas, REST APIs, WebSockets, and integration interfaces.
+*   **[`dashboard/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/dashboard/README.md) (Shaun)** - **Frontend Dashboard:** React dashboard, live monitoring alerts, inventory visualizations, and demo control UI.
+*   **[`ai-engine/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/ai-engine/README.md) (Tejas)** - **AI Intelligence:** Demand predictions, inventory forecasting models, training scripts, and ONNX compiler pipelines.
+*   **[`face-recognition/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/face-recognition/README.md) (Vignesh)** - **Donor Verification:** Face recognition, MediaPipe landmarks, duplicate checks, and validation REST APIs.
+*   **[`hardware/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/hardware/README.md) (Hardware Team)** - **Smart Cold Box:** Arduino UNO Q firmware, temperature/shock sensors, calibration, and USB serial output.
 
 ---
 
