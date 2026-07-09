@@ -44,11 +44,11 @@ HemaGrid AI is a distributed, connected cold chain monitoring and donor verifica
 This repository contains the system specification and individual developer README files. Each contributor owns a specific, isolated module to enable parallel development.
 
 *   **[`IMPLEMENTATION_PLAN.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/IMPLEMENTATION_PLAN.md)** - Master engineering architecture and integration specs.
-*   **[`01-MITHUN-README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/01-MITHUN-README.md)** - Core Backend Platform Hub (FastAPI, SQLite, WebSockets).
-*   **[`02-SHAUN-README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/02-SHAUN-README.md)** - Frontend Dashboard UI (React, TypeScript, TailwindCSS).
-*   **[`03-TEJAS-README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/03-TEJAS-README.md)** - AI Intelligence forecasting engine (Scikit-Learn, ONNX).
-*   **[`04-VIGNESH-README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/04-VIGNESH-README.md)** - Donor Verification face check (OpenCV, MediaPipe).
-*   **[`05-HARDWARE-README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/05-HARDWARE-README.md)** - Smart Cold Box IoT node (Arduino C++).
+*   **[`backend/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/backend/README.md)** - Core Backend Platform Hub (FastAPI, SQLite, WebSockets).
+*   **[`dashboard/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/dashboard/README.md)** - Frontend Dashboard UI (React, TypeScript, TailwindCSS).
+*   **[`ai-engine/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/ai-engine/README.md)** - AI Intelligence forecasting engine (Scikit-Learn, ONNX).
+*   **[`face-recognition/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/face-recognition/README.md)** - Donor Verification face check (OpenCV, MediaPipe).
+*   **[`hardware/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/hardware/README.md)** - Smart Cold Box IoT node (Arduino C++).
 
 ---
 

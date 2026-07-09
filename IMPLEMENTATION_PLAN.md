@@ -65,16 +65,17 @@ A clean mono-repo structure is used to prevent namespace collisions and cross-mo
 ```text
 snapdragon-hackathon-planning/
 ├── IMPLEMENTATION_PLAN.md    # Master planning (This Document)
-├── 01-MITHUN-README.md        # Core Backend Specifications
-├── 02-SHAUN-README.md         # Frontend Dashboard Specifications
-├── 03-TEJAS-README.md         # AI Intelligence Specifications
-├── 04-VIGNESH-README.md       # Donor Verification Specifications
-├── 05-HARDWARE-README.md      # Smart Cold Box Specifications
+├── README.md                 # Root developer landing guide
 ├── backend/                  # Mithun's workspace folder
+│   └── README.md             # Core Backend Specifications
 ├── dashboard/                # Shaun's workspace folder
+│   └── README.md             # Frontend Dashboard Specifications
 ├── ai-engine/                # Tejas's workspace folder
+│   └── README.md             # AI Intelligence Specifications
 ├── face-recognition/         # Vignesh's workspace folder
+│   └── README.md             # Donor Verification Specifications
 └── hardware/                 # Hardware Team's workspace folder
+    └── README.md             # Smart Cold Box Specifications
 ```
 
 ---
