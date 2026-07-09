@@ -1,0 +1,367 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HemaGrid AI - Core Backend Service",
+    "description": "Central coordination API hub.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventory/{hospital_id}": {
+      "get": {
+        "summary": "Get Hospital Inventory",
+        "description": "Retrieves stock levels for all blood types inside a specific hospital.",
+        "operationId": "get_hospital_inventory_api_v1_inventory__hospital_id__get",
+        "parameters": [
+          {
+            "name": "hospital_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Hospital Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventory/update": {
+      "post": {
+        "summary": "Update Inventory",
+        "description": "Updates available stock levels for a specific blood type (adds/removes units).",
+        "operationId": "update_inventory_api_v1_inventory_update_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/telemetry/report": {
+      "post": {
+        "summary": "Report Telemetry",
+        "description": "Ingests cold box telemetry streams, registers logs, and broadcasts updates via WS.",
+        "operationId": "report_telemetry_api_v1_telemetry_report_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetryReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/donor/verify-delegate": {
+      "post": {
+        "summary": "Verify Donor Delegate",
+        "description": "Acts as proxy wrapper. Uploads donor face photo to the Face Verification service,\nand broadcasts alert payloads if fraud matches are detected.",
+        "operationId": "verify_donor_delegate_api_v1_donor_verify_delegate_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_verify_donor_delegate_api_v1_donor_verify_delegate_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predict/demand-delegate": {
+      "post": {
+        "summary": "Predict Demand Delegate",
+        "description": "Queries hospital metadata profile locally, then forwards parameters to the\nAI Engine forecasting endpoint.",
+        "operationId": "predict_demand_delegate_api_v1_predict_demand_delegate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PredictionDelegateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_verify_donor_delegate_api_v1_donor_verify_delegate_post": {
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary",
+            "title": "Image"
+          }
+        },
+        "type": "object",
+        "required": [
+          "image"
+        ],
+        "title": "Body_verify_donor_delegate_api_v1_donor_verify_delegate_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InventoryUpdateRequest": {
+        "properties": {
+          "hospital_id": {
+            "type": "integer",
+            "title": "Hospital Id"
+          },
+          "blood_type": {
+            "type": "string",
+            "title": "Blood Type"
+          },
+          "units_added_removed": {
+            "type": "integer",
+            "title": "Units Added Removed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hospital_id",
+          "blood_type",
+          "units_added_removed"
+        ],
+        "title": "InventoryUpdateRequest"
+      },
+      "PredictionDelegateRequest": {
+        "properties": {
+          "hospital_id": {
+            "type": "integer",
+            "title": "Hospital Id"
+          },
+          "blood_type": {
+            "type": "string",
+            "title": "Blood Type"
+          },
+          "temperature_c": {
+            "type": "number",
+            "title": "Temperature C"
+          },
+          "dengue_cases_weekly": {
+            "type": "integer",
+            "title": "Dengue Cases Weekly"
+          },
+          "day_of_week": {
+            "type": "integer",
+            "title": "Day Of Week"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hospital_id",
+          "blood_type",
+          "temperature_c",
+          "dengue_cases_weekly",
+          "day_of_week",
+          "month"
+        ],
+        "title": "PredictionDelegateRequest"
+      },
+      "TelemetryReport": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "title": "Device Id"
+          },
+          "uptime_ms": {
+            "type": "integer",
+            "title": "Uptime Ms"
+          },
+          "telemetry": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Telemetry"
+          },
+          "status": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "device_id",
+          "uptime_ms",
+          "telemetry",
+          "status"
+        ],
+        "title": "TelemetryReport"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
