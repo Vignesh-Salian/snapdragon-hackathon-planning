@@ -1,58 +1,61 @@
-# Work Assignment: Core Backend
+# Module Owner Assignment: Backend Platform
 
 *   **Module Owner:** Mithun
-*   **Module Name:** Core Backend Hub
-*   **Objective:** Build a central orchestrator that manages hospital inventories, logs telemetry, exposes REST/WebSocket connections, and acts as the integration gateway.
+*   **Module Name:** Backend Platform Hub
 
 ---
 
-## 1. Why This Module Exists
+## 1. Module Overview
 
-No edge device acts alone in the HemaGrid AI system. The Core Backend acts as the single source of truth and communication broker, aggregating sensor telemetry from the cold boxes and proxying requests to the AI demand predictor and face verification services.
-
----
-
-## 2. Responsibilities & Folders Owned
-
-*   **Repository Folder:** `/backend`
-*   **Primary Tasks:**
-    *   Expose blood inventory database CRUD routes.
-    *   Ingest serial telemetry and log sensor records.
-    *   Implement WebSocket broadcast channel.
-    *   Proxy queries to the AI and Face modules.
+*   **Purpose:** Build the central orchestration hub for HemaGrid AI to manage data tables, ingest hardware telemetry, broker WebSocket streams, and route request/response sequences between subsystems.
+*   **Scope:** Backend application routing, database models, WebSocket brokers, and HTTP proxy clients.
+*   **Success Criteria:** Zero data corruption on write sequences, WebSocket broadcasts completing under 100ms, and complete coverage of API interface contracts.
 
 ---
 
-## 3. Features to Implement
+## 2. Responsibilities
 
-1.  **Inventory REST APIs:** Set, fetch, and update blood unit quantities per hospital and blood type.
-2.  **WebSocket Stream (`/ws/live`):** Establish connection endpoints, track dashboard listeners, and push real-time telemetry updates.
-3.  **Telemetry Logger:** Ingest cold box payloads, persist logs to SQLite, and forward broadcasts.
-4.  **Microservice Proxies:** Communicate with `/face-recognition` and `/ai-engine` API hosts using async clients.
+Mithun is responsible for designing, developing, and deploying the centralized FastAPI application. This includes SQLite database management, WebSocket streaming, and client wrappers to communicate with Vignesh's and Tejas's services.
 
 ---
 
-## 4. Detailed Task Checklist
+## 3. Repository Ownership
 
-- [ ] Create folder structure under `/backend` with standard FastAPI layouts.
-- [ ] Initialize SQLAlchemy engine and declare schema tables (`hospitals`, `inventory`, `shipment_logs`).
-- [ ] Write DB population script for sample hospital profiles.
-- [ ] Build WebSocket Connection Manager to handle active client sockets.
-- [ ] Write inventory update endpoints `/api/v1/inventory/update`.
-- [ ] Write telemetry intake endpoint `/api/v1/telemetry/report`.
-- [ ] Implement proxy service `face_client.py` for multipart photo verification queries.
-- [ ] Implement proxy service `ai_client.py` for predictive demand requests.
-- [ ] Expose FastAPI OpenAPI Swagger documentation.
+*   **Folder Scope:** `/backend`
+*   **Files Owned:**
+    *   `backend/api/main.py`
+    *   `backend/database/models.py`
+    *   `backend/services/ai_client.py`
+    *   `backend/services/face_client.py`
+    *   `backend/websocket_hub/manager.py`
+    *   `backend/tests/test_backend.py`
 
 ---
 
-## 5. Interface Specifications
+## 4. Functional Requirements
+
+### Feature 1: Inventory REST API
+*   *Task:* Implement endpoints to fetch stock levels and add/remove blood units per hospital.
+*   *Task:* Validate inventory increments to ensure stock never drops below zero.
+
+### Feature 2: Telemetry Logger & Adaptor
+*   *Task:* Build route to ingest telemetry from the Smart Cold Box.
+*   *Task:* Log sensor readings (temperature, impact G-force) into SQLite.
+*   *Task:* Trigger WebSocket broadcast payload immediately upon packet arrival.
+
+### Feature 3: Biometric & AI Delegate Proxies
+*   *Task:* Implement async HTTP clients to request donor duplicate checks from Vignesh's service.
+*   *Task:* Implement async HTTP clients to request demand predictions from Tejas's service.
+
+---
+
+## 5. Technical Responsibilities
 
 ### APIs to Expose
 *   `GET /api/v1/inventory/{hospital_id}` -> Fetches blood levels.
 *   `POST /api/v1/inventory/update` -> Body: `{hospital_id, blood_type, units_added_removed}`.
 *   `POST /api/v1/telemetry/report` -> Body: `{device_id, uptime_ms, telemetry, status}`.
-*   `WebSocket /ws/live` -> Pushes real-time dashboard updates.
+*   `WebSocket /ws/live` -> Stream dashboard updates.
 
 ### APIs to Consume
 *   `POST http://127.0.0.1:8000/api/v1/donor/verify` (Vignesh's module)
@@ -60,44 +63,50 @@ No edge device acts alone in the HemaGrid AI system. The Core Backend acts as th
 
 ---
 
-## 6. Coding & Documentation Standards
+## 6. Non-Functional Requirements
 
-*   **Language & Tech:** Python, FastAPI, SQLAlchemy, SQLite, Uvicorn.
-*   **Coding Conventions:**
-    *   Keep database session lifecycle within endpoints using dependencies (`get_db`).
-    *   Use relative imports within `/backend/api/`.
-    *   Keep routes clean; delegate database queries to `/backend/database/` operations.
-*   **Documentation:** Expose complete docstrings for every routing handler and connection manager helper.
+*   **Performance:** Telemetry database write sequence must take `<30ms`.
+*   **Reliability:** Auto-reconnect handlers for database pools; graceful API error mappings.
+*   **Documentation:** Expose OpenAPI Swagger schema documentation on startup.
 
 ---
 
-## 7. Testing Responsibilities
+## 7. Deliverables
 
-*   Write comprehensive test suites inside `/backend/tests/test_backend.py`.
-*   Mock outgoing HTTP requests to Vignesh's and Tejas's services using unit test libraries (e.g. `unittest.mock.patch`).
-*   Validate inventory updates do not drop below zero.
-
----
-
-## 8. Weekly Milestones
-
-*   **Week 1:** SQLite database tables declared, and mock inventory update routes functional.
-*   **Week 2:** WebSocket connection manager implemented. Broadcast loops tested via mock clients.
-*   **Week 3:** Outgoing HTTP clients integrated with local mock APIs of Vignesh and Tejas.
-*   **Week 4:** Integration testing, error-handling validation, and API parity checks completed.
+*   FastAPI application configured with CORS.
+*   SQLAlchemy models generating SQLite tables.
+*   WebSocket manager broadcasting data packets.
+*   Async integration tests showing complete mocks of external microservices.
 
 ---
 
-## 9. Dependencies & Constraints
+## 8. Development Milestones
 
-*   **Modules Depending on Your Work:** Shaun (Dashboard relies on your REST inventory APIs and WebSockets).
-*   **Modules You Depend On:** Vignesh (Face Verification API) and Tejas (AI Engine API).
-*   **Things NOT to Modify:** Do not change folders outside `/backend` without PR approvals.
+*   **Week 1:** Initialize folder, configure SQLAlchemy, and pop data templates.
+*   **Week 2:** Complete WebSocket Connection Manager.
+*   **Week 3:** Connect async proxies to Vignesh's and Tejas's local services.
+*   **Week 4:** Verify multi-device broadcasts and prepare mock tests.
+
+---
+
+## 9. Dependencies & Module Boundaries
+
+*   **What You Depend On:** Vignesh (Face Verification API) and Tejas (AI Engine API).
+*   **What Depends On You:** Shaun (Dashboard UI fetches data and listens to your WebSockets).
+*   **Module Boundaries:** Do not modify code files inside `/dashboard`, `/ai-engine`, `/face-recognition`, or `/hardware`.
 
 ---
 
 ## 10. Acceptance Criteria
 
-*   Inventory queries return in `<50ms` on SQLite.
-*   Telemetry broadcasts route to all active WebSocket listeners within `100ms` of packet ingestion.
-*   The database correctly persists telemetry logs and updates inventories without race conditions.
+*   SQLite database tables are successfully generated on startup.
+*   Test suites execute with 100% pass rates.
+*   WebSocket broadcasts successfully distribute JSON payloads to all connected clients.
+
+---
+
+## 11. Integration Checklist
+
+- [ ] Confirm local FastAPI runs on port `8002`.
+- [ ] Verify database schema tables exist inside `hemagrid.db`.
+- [ ] Verify proxy endpoints route queries correctly under mock API environments.

@@ -1,56 +1,58 @@
-# Work Assignment: Donor Verification
+# Module Owner Assignment: Donor Verification
 
 *   **Module Owner:** Vignesh
 *   **Module Name:** Biometric Donor Validation Engine
-*   **Objective:** Develop a local computer vision pipeline to extract face landmarks, cache donor profiles, detect duplicate donor registrations, and expose the logic via a REST API.
 
 ---
 
-## 1. Why This Module Exists
+## 1. Module Overview
 
-Safe donations require tracking donor frequencies to protect health and block illegal blood brokers. Processing face checks locally at registration desks prevents double registrations even under unstable internet conditions.
-
----
-
-## 2. Responsibilities & Folders Owned
-
-*   **Repository Folder:** `/face-recognition`
-*   **Primary Tasks:**
-    *   Integrate MediaPipe Face Mesh model.
-    *   Construct biometric feature extractor.
-    *   Build local SQLite profile storage.
-    *   Expose FastAPI route for verification.
+*   **Purpose:** Develop a local computer vision pipeline to extract face landmarks, cache donor profiles, detect duplicate donor registrations, and expose the logic via a REST API to prevent donor fraud.
+*   **Scope:** MediaPipe Face Mesh integration, local SQLite profile storage, duplicate check logic, and API endpoints.
+*   **Success Criteria:** Zero false negatives on identical faces, comparison request latency under 300ms, and clean error handling for non-face images.
 
 ---
 
-## 3. Features to Implement
+## 2. Responsibilities
 
-1.  **Face Landmark Extractor:** Decodes raw image bytes and processes them using MediaPipe Face Mesh to get 468 landmarks (biometric topological embedding).
-2.  **Biometric Database:** Schema to store name, time of enrollment, and landmarks array in a local SQLite file.
-3.  **Duplicate Detector:** Vector comparison engine using Euclidean distance to compare input face meshes with recent records.
-4.  **REST API:** Route handlers to enroll and check donor duplicate status.
+Vignesh is responsible for integrating MediaPipe Face Mesh, building the Euclidean distance comparison algorithm, setting up the local SQLite donor profile database, and writing the FastAPI service endpoint wrapper.
 
 ---
 
-## 4. Detailed Task Checklist
+## 3. Repository Ownership
 
-- [ ] Create folder structure under `/face-recognition` including `api`, `models`, `database`, `docs`, and `tests`.
-- [ ] Initialize MediaPipe Face Mesh module in `models/detector.py`.
-- [ ] Implement Euclidean distance comparison method inside `detector.py`.
-- [ ] Write SQLite connection wrapper and create `donors` table schemas in `database/db.py`.
-- [ ] Write DB helper to retrieve recent donors within the standard 56-day lockout window.
-- [ ] Write the FastAPI app `api/main.py` exposing `/enroll` and `/verify` endpoints.
-- [ ] Implement error checking (e.g. raise `HTTPException 400` if no face is detected in uploaded photo).
-- [ ] Write mock test suite using TestClient to verify duplicate detection without requiring physical cameras.
+*   **Folder Scope:** `/face-recognition`
+*   **Files Owned:**
+    *   `face-recognition/api/main.py`
+    *   `face-recognition/database/db.py`
+    *   `face-recognition/models/detector.py`
+    *   `face-recognition/tests/test_api.py`
+    *   `face-recognition/docs/standards_and_roadmap.md`
 
 ---
 
-## 5. Interface Specifications
+## 4. Functional Requirements
+
+### Feature 1: Face Landmark Extractor
+*   *Task:* Decode input image bytes and process them using MediaPipe Face Mesh.
+*   *Task:* Extract standard 468 landmark coordinates (flat array of 1404 floats).
+
+### Feature 2: Local SQLite profile storage
+*   *Task:* Define DB schemas to store names, enrollment times, and landmarks.
+*   *Task:* Retrieve recent enrollments within the clinical 56-day lockout window.
+
+### Feature 3: Similarity Matching
+*   *Task:* Implement Euclidean distance calculations to compare input face meshes.
+*   *Task:* Flag duplicate donor matches if the distance drops below the 0.15 threshold.
+
+---
+
+## 5. Technical Responsibilities
 
 ### APIs to Expose
 *   `POST /api/v1/donor/enroll` -> Payload: `name` (form field), `image` (file upload).
 *   `POST /api/v1/donor/verify` -> Payload: `image` (file upload).
-*   **Response (Duplicate Flagged):**
+*   **Response Format (409 Conflict - Duplicate Flagged):**
     ```json
     {
       "duplicate_detected": true,
@@ -66,35 +68,49 @@ Safe donations require tracking donor frequencies to protect health and block il
 
 ---
 
-## 6. Coding & Documentation Standards
+## 6. Non-Functional Requirements
 
-*   **Language & Tech:** Python, MediaPipe, OpenCV, SQLite, FastAPI, NumPy.
-*   **Coding Conventions:**
-    *   Reuse the MediaPipe model instance context across requests; do not instantiate on every call.
-    *   Store landmark coordinates as serialized JSON strings in SQLite database.
-    *   Format floating-point outputs to 2 decimal places.
+*   **Performance:** Verification requests must complete in `<300ms` for 1,000 donor records.
+*   **Reliability:** Return `400 Bad Request` if no face is found in the photo.
+*   **Scalability:** SQLite indexing on `enrolled_at` column to speed up lookup requests.
 
 ---
 
-## 7. Testing Responsibilities
+## 7. Deliverables
 
-*   Create comprehensive test cases inside `tests/test_api.py`.
-*   Mock face model outputs (e.g. static float arrays) to assert endpoint behaviors.
-*   Validate that non-face images are rejected with appropriate error messages.
-
----
-
-## 8. Weekly Milestones
-
-*   **Week 1:** MediaPipe integration verified. Single-image landmark extraction functional.
-*   **Week 2:** SQLite database schema and lookup functions validated.
-*   **Week 3:** FastAPI endpoints established. Verification logic return schemas verified.
-*   **Week 4:** Unit tests completed. Parity check runs without errors.
+*   FastAPI application.
+*   MediaPipe Face Mesh extractor.
+*   Local database schemas.
+*   Unit tests mocking face mesh arrays.
 
 ---
 
-## 9. Dependencies & Constraints
+## 8. Development Milestones
 
-*   **Modules Depending on Your Work:** Mithun (Core Backend proxies validation requests to your API).
-*   **Things NOT to Modify:** Do not modify directories outside `/face-recognition`.
-*   **Verification Target:** Comparison requests must complete in `<300ms` for a db size of 1,000 donors.
+*   **Week 1:** MediaPipe integration verified; single-image landmark extraction functional.
+*   **Week 2:** SQLite database schemas and query lookups validated.
+*   **Week 3:** FastAPI endpoints established; duplicate verification response format validated.
+*   **Week 4:** Unit tests completed.
+
+---
+
+## 9. Dependencies & Module Boundaries
+
+*   **What Depends On You:** Mithun (Core Backend proxies validation requests to your API).
+*   **Module Boundaries:** Do not modify code files inside `/backend`, `/dashboard`, `/ai-engine`, or `/hardware`.
+
+---
+
+## 10. Acceptance Criteria
+
+*   Image uploads without faces are rejected with HTTP 400.
+*   Identical faces trigger duplicate donor matches (HTTP 409).
+*   Tests pass with 100% success rate.
+
+---
+
+## 11. Integration Checklist
+
+- [ ] Confirm local FastAPI runs on port `8000`.
+- [ ] Confirm database creates `donors.db` file correctly.
+- [ ] Verify image post-request payload formats match backend specifications.

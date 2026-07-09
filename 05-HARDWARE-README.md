@@ -1,55 +1,54 @@
-# Work Assignment: Smart Cold Box (Hardware Team)
+# Module Owner Assignment: Smart Cold Box (Hardware Team)
 
 *   **Module Owner:** Hardware Team
 *   **Module Name:** Smart Cold Box IoT Node
-*   **Objective:** Develop Arduino UNO Q firmware to monitor shipment temperature and shock/vibration levels, evaluate safety states, and stream structured telemetry over serial interfaces.
 
 ---
 
-## 1. Why This Module Exists
+## 1. Module Overview
 
-Blood units are vulnerable to temperature excursions and mechanical shocks during transport. Monitoring these variables locally on low-power microcontrollers ensures immediate warnings can be triggered before damage is done.
-
----
-
-## 2. Responsibilities & Folders Owned
-
-*   **Repository Folder:** `/hardware`
-*   **Primary Tasks:**
-    *   Assemble sensors and write Arduino C++ firmware.
-    *   Implement threshold rules and local state evaluation.
-    *   Serialize sensor metrics as JSON strings over UART.
-    *   Document hardware connections.
+*   **Purpose:** Develop Arduino UNO Q firmware to monitor shipment temperature and shock/vibration levels, evaluate safety states, and stream structured telemetry over serial interfaces.
+*   **Scope:** Arduino C++ firmware, DHT22 sensor integration, ADXL345 accelerometer integration, status indicators (LEDs/buzzer), and serial serialization.
+*   **Success Criteria:** Non-blocking 1 Hz sensor polling loops, state updates matching thresholds, and stable JSON frames outputted at 115200 baud.
 
 ---
 
-## 3. Features to Implement
+## 2. Responsibilities
 
-1.  **Sensor Polling Loop:** Query DHT22 and ADXL345 sensors at a non-blocking 1 Hz frequency.
-2.  **State Logic Engine:** Evaluate safety parameters locally (SAFE, WARNING, COMPROMISED) based on physical thresholds.
-3.  **Active Alert Indicators:** Drive status LEDs and piezo alarms to represent calculated state locally.
-4.  **Serial Payload Generator:** Print structured JSON payloads to the serial UART port at 115200 baud.
+The Hardware Team is responsible for wiring the sensors and indicators, writing non-blocking polling loops, implementing threshold rules, generating structured JSON payloads, and documenting circuit connections.
 
 ---
 
-## 4. Detailed Task Checklist
+## 3. Repository Ownership
 
-- [ ] Create folder structure under `/hardware` with `firmware`, `schematics`, `docs`, and `tests`.
-- [ ] Connect DHT22 and ADXL345 to Arduino UNO R4/Minima breadboard.
-- [ ] Wire status indicator LEDs (Green, Yellow, Red) and active buzzer using correct resistors.
-- [ ] Write non-blocking timer logic using `millis()` to poll sensors every 1 second.
-- [ ] Write local threshold comparison rules for temperature and shock magnitude.
-- [ ] Construct JSON serialization printer using the standard Arduino string buffers.
-- [ ] Write `schematics/connections.md` detailing all wiring diagrams.
-- [ ] Build a python serial listener script inside `tests/` to parse and validate JSON payloads.
+*   **Folder Scope:** `/hardware`
+*   **Files Owned:**
+    *   `hardware/firmware/smart_cold_box/smart_cold_box.ino`
+    *   `hardware/schematics/connections.md`
+    *   `hardware/tests/mock_serial_reader.py`
+    *   `hardware/docs/standards_and_milestones.md`
 
 ---
 
-## 5. Interface Specifications
+## 4. Functional Requirements
+
+### Feature 1: Sensor Polling Loop
+*   *Task:* Query DHT22 and ADXL345 sensors at a non-blocking 1 Hz frequency using `millis()`.
+
+### Feature 2: Threshold Engine
+*   *Task:* Compare metrics locally to classify state (SAFE, WARNING, COMPROMISED).
+*   *Task:* Drive status LEDs and piezo alarms to represent state changes.
+
+### Feature 3: Serial Payload Generator
+*   *Task:* Format and stream telemetry data as structured JSON strings over serial UART.
+
+---
+
+## 5. Technical Responsibilities
 
 ### Telemetry Packet Output (Serial USB)
 *   **Baud Rate:** `115200`
-*   **Format:**
+*   **Payload Format:**
     ```json
     {
       "device_id": "cold_box_001",
@@ -72,35 +71,49 @@ Blood units are vulnerable to temperature excursions and mechanical shocks durin
 
 ---
 
-## 6. Coding & Documentation Standards
+## 6. Non-Functional Requirements
 
-*   **Language & Tech:** Arduino C++, DHT22 Temperature, ADXL345 I2C Accelerometer.
-*   **Coding Conventions:**
-    *   Do not use `delay()` in the loop. Use `millis()` tasks.
-    *   Avoid using the dynamic `String` library to prevent memory leaks on microcontrollers. Use static char arrays.
-    *   Protect print strings in Flash memory using the `F()` macro helper.
-*   **Documentation:** Maintain absolute pin maps and wiring diagrams within the schematics markdown file.
+*   **Performance:** Telemetry data must be evaluated and outputted within **100ms** of a threshold violation.
+*   **Reliability:** Strict non-blocking architecture; zero dynamic memory allocations (`malloc` or `String` library).
+*   **Safety:** Flash string optimization using the `F()` macro to keep dynamic RAM utilization low.
 
 ---
 
-## 7. Testing Responsibilities
+## 7. Deliverables
 
-*   Implement test verification scripts (e.g. `mock_serial_reader.py`) to test serial outputs on local computers.
-*   Conduct thermal validation (warm/cool sensors) and shock triggers (tap accelerometer) to verify state updates.
-
----
-
-## 8. Weekly Milestones
-
-*   **Week 1:** Sensors wired and reading values successfully.
-*   **Week 2:** State logic and LED indicators validated.
-*   **Week 3:** JSON serialization verified over serial monitor.
-*   **Week 4:** Physical enclosure assembled, and telemetry validated using mock listener scripts.
+*   Arduino C++ firmware source file.
+*   Physical circuit schematics document.
+*   Python serial validation utility.
+*   Standards and guidelines document.
 
 ---
 
-## 9. Dependencies & Constraints
+## 8. Development Milestones
 
-*   **Modules Depending on Your Work:** Mithun (Core Backend USB daemon reads your serial stream).
-*   **Things NOT to Modify:** Do not alter directories outside `/hardware`.
-*   **Baud Limit:** Ensure UART transmissions remain locked at `115200` to prevent buffer frame corruption.
+*   **Week 1:** Sensors wired and value reading validated.
+*   **Week 2:** State logic and indicator LEDs validated.
+*   **Week 3:** JSON serialization verified over serial interfaces.
+*   **Week 4:** Physical enclosure built; serial telemetry validation complete.
+
+---
+
+## 9. Dependencies & Module Boundaries
+
+*   **What Depends On You:** Mithun (Core Backend USB daemon reads your serial stream).
+*   **Module Boundaries:** Do not modify code files inside `/backend`, `/dashboard`, `/ai-engine`, or `/face-recognition`.
+
+---
+
+## 10. Acceptance Criteria
+
+*   Buzzer pulses and red LED illuminates during COMPROMISED state.
+*   JSON outputs match the validation schema.
+*   Firmware memory footprint is $<60\%$ dynamic RAM.
+
+---
+
+## 11. Integration Checklist
+
+- [ ] Confirm UART baud rate is locked at `115200`.
+- [ ] Verify sensors read correct temperature values in test compartments.
+- [ ] Confirm python serial test script validates payloads without JSON syntax errors.

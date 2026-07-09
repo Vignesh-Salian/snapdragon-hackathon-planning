@@ -1,16 +1,25 @@
-# HemaGrid AI - Implementation Plan & Architecture Record
+# HemaGrid AI - Engineering Implementation Plan
 
-This document serves as the master planning and architectural layout for HemaGrid AI. It defines module boundaries, communication protocols, interface contracts, git workflows, and our pre-hackathon development roadmap.
-
----
-
-## 1. Project Overview
-
-HemaGrid AI is a distributed, connected cold chain monitoring and donor verification system. It secures and optimizes the blood supply network by detecting transport compromises in real time, preventing duplicate donor registrations, and predicting hospital demand spikes.
+This document serves as the master engineering specification, architectural record, and project execution blueprint for HemaGrid AI. It governs the development phase leading up to the Qualcomm Snapdragon Multiverse Hackathon.
 
 ---
 
-## 2. System Architecture
+## 1. Executive Summary
+
+HemaGrid AI is a smart, connected logistics and validation ecosystem designed to secure the blood supply chain. The system utilizes low-power edge microcontrollers to monitor blood conditions in transit, on-device biometric validation to prevent duplicate donor registrations, and centralized demand-forecasting models to optimize regional stock distribution. 
+
+---
+
+## 2. Project Vision
+
+The project aims to solve critical logistics bottlenecks in blood supply management (specifically targeting regional constraints in India). By replacing siloed, independent tracking systems with a collaborative edge computing architecture, HemaGrid AI ensures that:
+1.  No blood unit is silently compromised in transit.
+2.  Biometric checks at donor desks block unsafe, over-frequent donations.
+3.  Hospitals are alerted to forecasted stock demands before shortages occur.
+
+---
+
+## 3. System Architecture
 
 ```text
 +---------------------------------------+
@@ -37,21 +46,21 @@ HemaGrid AI is a distributed, connected cold chain monitoring and donor verifica
 
 ---
 
-## 3. Module Breakdown & Ownership
+## 4. High-Level Component Diagram
 
-| Module | Primary Owner | Technologies | Folder Scope |
-| :--- | :--- | :--- | :--- |
-| **01 Core Backend** | Mithun | FastAPI, SQLite, SQLAlchemy, WebSockets | `/backend` |
-| **02 Frontend Dashboard** | Shaun | React, TypeScript, TailwindCSS, Chart.js | `/dashboard` |
-| **03 AI Intelligence** | Tejas | Python, Scikit-Learn, ONNX Runtime | `/ai-engine` |
-| **04 Donor Verification** | Vignesh | Python, OpenCV, MediaPipe | `/face-recognition` |
-| **05 Smart Cold Box** | Hardware Team | Arduino C++, DHT22, ADXL345 | `/hardware` |
+```text
+[Hardware Node] ────(UART/USB JSON)───► [Core Backend Hub] ◄───(WS JSON)───► [React Dashboard]
+                                                │
+                                                ├──(HTTP POST)──► [MediaPipe Face Module]
+                                                │
+                                                └──(HTTP POST)──► [ONNX Prediction Engine]
+```
 
 ---
 
-## 4. Repository Structure
+## 5. Repository Structure
 
-The unified repository structure for development is laid out as follows:
+A clean mono-repo structure is used to prevent namespace collisions and cross-module git conflicts:
 
 ```text
 snapdragon-hackathon-planning/
@@ -61,135 +70,117 @@ snapdragon-hackathon-planning/
 ├── 03-TEJAS-README.md         # AI Intelligence Specifications
 ├── 04-VIGNESH-README.md       # Donor Verification Specifications
 ├── 05-HARDWARE-README.md      # Smart Cold Box Specifications
-├── backend/                  # Managed by Mithun
-├── dashboard/                # Managed by Shaun
-├── ai-engine/                # Managed by Tejas
-├── face-recognition/         # Managed by Vignesh
-└── hardware/                 # Managed by Hardware Team
+├── backend/                  # Mithun's workspace folder
+├── dashboard/                # Shaun's workspace folder
+├── ai-engine/                # Tejas's workspace folder
+├── face-recognition/         # Vignesh's workspace folder
+└── hardware/                 # Hardware Team's workspace folder
 ```
 
 ---
 
-## 5. Module Communication & API Contracts
+## 6. Module Responsibilities
 
-All interfaces must strictly adhere to the contracts defined below. Changes to these schemas require alignment from all owners.
-
-### 5.1 Hardware to Core Backend
-*   **Protocol:** Serial JSON over USB (Baud rate: `115200`)
-*   **Format:**
-    ```json
-    {
-      "device_id": "string",
-      "uptime_ms": "integer",
-      "telemetry": {
-        "temperature_c": "float",
-        "humidity_pct": "float",
-        "acceleration_g": "float",
-        "max_impact_g": "float"
-      },
-      "status": {
-        "state": "SAFE | WARNING | COMPROMISED",
-        "flags": {
-          "temp_breached": "boolean",
-          "impact_breached": "boolean"
-        }
-      }
-    }
-    ```
-
-### 5.2 Core Backend to Donor Verification
-*   **Protocol:** HTTP POST (Multipart Form-Data)
-*   **Endpoint:** `/api/v1/donor/verify`
-*   **Payload:** Binary Image
-*   **Response (200 OK / 409 Conflict):**
-    ```json
-    {
-      "duplicate_detected": "boolean",
-      "confidence": "float",
-      "matched_donor": {
-        "id": "integer",
-        "name": "string",
-        "enrolled_at": "string"
-      },
-      "message": "string"
-    }
-    ```
-
-### 5.3 Core Backend to AI Engine
-*   **Protocol:** HTTP POST (JSON)
-*   **Endpoint:** `/api/v1/predict/demand`
-*   **Payload:**
-    ```json
-    {
-      "hospital_id": "integer",
-      "hospital_type": "string",
-      "blood_type": "string",
-      "temperature_c": "float",
-      "dengue_cases_weekly": "integer",
-      "day_of_week": "integer",
-      "month": "integer"
-    }
-    ```
-*   **Response (200 OK):**
-    ```json
-    {
-      "status": "success",
-      "predictions": {
-        "expected_demand_units": "float",
-        "recommended_min_inventory": "integer",
-        "alert_level": "SAFE | WARNING | CRITICAL"
-      }
-    }
-    ```
-
-### 5.4 Core Backend to Frontend Dashboard
-*   **Protocol:** WebSocket (`/ws/live`)
-*   **Broadcast Frame:**
-    ```json
-    {
-      "event_type": "TELEMETRY_UPDATE | FRAUD_ALERT",
-      "timestamp": "string (ISO 8601)",
-      "data": "object"
-    }
-    ```
+1.  **Core Backend (Mithun):** Central routing hub, SQLite schema manager, WebSocket connection broker, and HTTP proxy clients.
+2.  **Frontend Dashboard (Shaun):** React charting layouts, stateful alerts, and real-time inventory administration UI.
+3.  **AI Intelligence (Tejas):** Dataset synthetics, Random Forest regressor, ONNX conversion compile pipeline, and prediction endpoint.
+4.  **Donor Verification (Vignesh):** MediaPipe Face Mesh landmark extraction, SQLite donor enrollment storage, and similarity search.
+5.  **Smart Cold Box (Hardware):** Arduino C++ telemetry monitoring, state evaluation logic, LED alerts, and serial printer.
 
 ---
 
-## 6. Pre-Hackathon Development Roadmap & Milestones
-
-The schedule is designed to establish working, independent modules prior to on-site assembly.
+## 7. Communication Flow Between Modules
 
 ```text
-Pre-Hackathon Milestones:
-[Week 1] Code Repositories Initialized & Schemas Frozen
-[Week 2] Isolated Module Implementations Completed (Local Mock Tests)
-[Week 3] Local Integration Testing (Mocks replaced with client services)
-[Week 4] Edge Case Resolution & Demo Scenarios Programmed
-
-On-Site Hackathon Plan (24-Hour Sprint):
-Hour 00-02: Setup Qualcomm Hardware Laptops & Flash Arduino
-Hour 02-06: Connect Core Backend to Real Hardware USB Ports
-Hour 06-12: Bind AI & Face Models to Snapdragon NPUs using QAIRT / AI Hub
-Hour 12-18: Complete End-to-End System Testing & Calibration
-Hour 18-22: Demo Rehearsals, Pitch Tuning, UI Accents
-Hour 22-24: Grand Finale Presentation Mode Active
+1. Sensor Event:  Hardware -> Serial (JSON) -> Backend -> WebSocket -> Dashboard
+2. Donor Check:   Dashboard -> HTTP POST -> Backend -> HTTP POST -> Face Module -> JSON response
+3. Forecast Run:  Dashboard -> HTTP POST -> Backend -> HTTP POST -> AI Engine -> JSON response
 ```
 
 ---
 
-## 7. Git Workflow & Branching Strategy
+## 8. API Ownership
 
-To avoid merge conflicts, all developers operate in separate directories and check-in to feature branches.
+*   **Mithun:** Owns `/api/v1/inventory/*`, `/api/v1/telemetry/*`, `/ws/live`, and proxy handlers `/api/v1/donor/verify-delegate` and `/api/v1/predict/demand-delegate`.
+*   **Vignesh:** Owns `/api/v1/donor/enroll` and `/api/v1/donor/verify`.
+*   **Tejas:** Owns `/api/v1/predict/demand`.
 
-*   **Main Branch Protection:** No developer commits directly to `main`.
-*   **Branch Naming Convention:**
-    *   Mithun: `feature/backend-[feature-name]`
-    *   Shaun: `feature/dashboard-[feature-name]`
-    *   Tejas: `feature/ai-[feature-name]`
-    *   Vignesh: `feature/face-[feature-name]`
-    *   Hardware: `feature/hardware-[feature-name]`
-*   **Commit Message Convention:**
-    *   `feat(scope): add new feature`
-    *   `fix(scope): resolve issue description`
-    *   `docs(scope): update documentation`
-*   **Pull Request Rule:** All Pull Requests require code compilation pass checks and approval from at least one other team member.
+---
+
+## 9. Integration Strategy
+
+All modules are developed locally in isolation using mock payload generators. At week 3, local HTTP clients are pointed to the respective development hosts. During the 24-hour hackathon, we will:
+1.  Flash the Arduino and verify USB Serial binding on host PCs.
+2.  Configure QAIRT SDK bindings to execute Tejas's and Vignesh's models on Snapdragon NPUs.
+3.  Deploy the React dashboard to local test environments.
+
+---
+
+## 10. Development Workflow & Git Branching
+
+### Git Branching Strategy
+*   No direct commits to `main`.
+*   Feature branches name prefix conventions:
+    *   `feature/backend-...`
+    *   `feature/dashboard-...`
+    *   `feature/ai-...`
+    *   `feature/face-...`
+    *   `feature/hardware-...`
+
+### Code Review Process
+*   All Pull Requests must pass automated unit tests (run in local actions).
+*   Requires code review approval from at least one other module owner.
+
+---
+
+## 11. Coding & Documentation Standards
+
+*   **Coding Standards:**
+    *   Python: PEP8 compliance, strict typing inputs, and Pydantic validation schemas.
+    *   C++: Non-blocking loops, F() macro string literals, and zero dynamic memory allocations.
+    *   TypeScript: Strict prop interfaces and isolated state containers.
+*   **Documentation Standards:**
+    *   All endpoints must be documented inside FastAPI OpenAPI specs.
+    *   Hardware pins and connections must be cataloged in circuit schematics.
+
+---
+
+## 12. Testing Strategy
+
+*   Each module contains an isolated `/tests` folder.
+*   Integration tests mock external network boundaries using standard Python/JS mock libraries.
+*   Tests must be run locally before opening pull requests.
+
+---
+
+## 13. Development Timeline (Pre-Hackathon)
+
+```text
+Week 1: Folder scoping, interface contracts frozen, and DB schemas declared.
+Week 2: Core modules implemented with local test configurations.
+Week 3: Integration checkpoints: HTTP clients connected across local hosts.
+Week 4: Dry runs with simulated payloads and edge-case testing.
+```
+
+---
+
+## 14. Hackathon Integration Timeline (24-Hour Event)
+
+```text
+H00 - H02: Environment configuration: QAIRT SDK setup and NPU validation.
+H02 - H06: USB serial binding checks and physical sensor calibration.
+H06 - H12: Compile AI models (ONNX -> QNN Hexagon NPU libraries).
+H12 - H18: End-to-end telemetry system stress tests.
+H18 - H22: Demo UI polishing and presentation scripting.
+H22 - H24: Active presentation mode: Live evaluation run.
+```
+
+---
+
+## 15. Risks and Mitigation Plan
+
+| Risk Description | Severity | Mitigation Plan |
+| :--- | :--- | :--- |
+| **Snapdragon NPU compiler mismatch**| Critical | Fallback to ONNX Runtime CPU execution. |
+| **Telemetry network drop** | High | Buffer sensor frames locally on Arduino flash. |
+| **Face recognition false acceptance** | High | Tuned Euclidean threshold defaults inside SQLite. |
