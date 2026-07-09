@@ -23,14 +23,20 @@ This document serves as the formal Architecture Decision Record (ADR) and projec
 6. [Side-by-Side Comparison](#side-by-side-comparison)
 7. [Hardware Comparison](#hardware-comparison)
 8. [Software Comparison](#software-comparison)
-9. [Demo Comparison](#demo-comparison)
-10. [24-Hour Execution Analysis](#24-hour-execution-analysis)
-11. [Risk Matrix](#risk-matrix)
-12. [Scoring Table](#scoring-table)
-13. [Final Decision](#final-decision)
-14. [Why We Selected This Project](#why-we-selected-this-project)
-15. [Action Items](#action-items)
-16. [Conclusion](#conclusion)
+9. [Cost Comparison](#cost-comparison)
+10. [Hardware Availability Analysis](#hardware-availability-analysis)
+11. [Engineering Cost](#engineering-cost)
+12. [Time Cost](#time-cost)
+13. [Resource Dependency Analysis](#resource-dependency-analysis)
+14. [Cost-to-Impact Analysis](#cost-to-impact-analysis)
+15. [Demo Comparison](#demo-comparison)
+16. [24-Hour Execution Analysis](#24-hour-execution-analysis)
+17. [Risk Matrix](#risk-matrix)
+18. [Scoring Table](#scoring-table)
+19. [Final Decision](#final-decision)
+20. [Why We Selected This Project](#why-we-selected-this-project)
+21. [Action Items](#action-items)
+22. [Conclusion](#conclusion)
 
 ---
 
@@ -204,6 +210,115 @@ SynapseX is a decentralized collaborative edge intelligence network where indepe
 
 ---
 
+## Cost Comparison
+
+Prototyping cost estimates directly impact development readiness and scalability.
+
+| Cost Category | Idea 1: HemaGrid AI | Idea 2: SynapseX | Analysis & Rationale |
+| :--- | :--- | :--- | :--- |
+| **Hardware Cost** | Low (~$50) | Moderate (~$150) | HemaGrid uses standard components; SynapseX requires higher-end controllers. |
+| **Sensor Cost** | Low (~$15) | Moderate (~$60) | High-G accelerometers and AC current transformers are expensive. |
+| **Arduino Components** | Arduino Uno or Clone ($15) | Arduino Uno Q ($35+) | Idea 2 requires a higher-spec MCU for TinyML execution. |
+| **Additional Electronics**| Enclosure cooler box, wiring ($20) | Mounting structures, industrial wiring ($40) | HemaGrid relies on simple consumer-grade containers. |
+| **Networking** | Standard WiFi hotspot ($0) | Custom multi-device router network ($20)| SynapseX requires stable multi-agent data backbones. |
+| **Cloud Cost** | Firebase Free Tier ($0) | Cloud AI 100 testing/emulation ($0-$50)| SynapseX cloud signature search carries setup/API costs. |
+| **Software Cost** | Open-source libraries ($0) | Open-source libraries ($0) | Both utilize open-source frameworks. |
+| **Development Tooling** | Standard IDEs (Free) | Edge Impulse & QAIRT SDK (Free) | No direct tool licensing costs are required for either. |
+| **Hidden Engineering Cost**| Low (Standard debugging, simple APIs) | **Extreme** (NPU compilation, layer errors) | Lost developer hours resolving compiler bugs on SynapseX. |
+| **Debugging Cost** | Low (WebSocket console logs) | High (Multi-agent tracing & logging) | Resolving distributed state synchronization is difficult. |
+| **Maintenance Cost** | Low (Stateless operations) | High (Continuous drift calibration) | SynapseX models require frequent tuning and retraining. |
+| **Total Estimated Cost** | **~$85** | **~$300 - $350** | **HemaGrid AI is a highly cost-efficient prototype.** |
+
+---
+
+## Hardware Availability Analysis
+
+Prototyping speed in a 24-hour hackathon is bound by hardware logistics.
+
+*   **Availability of Required Sensors:** The DHT22 (temperature) and ADXL345 (accelerometer) used in HemaGrid AI are standard items in basic sensor kits. SynapseX requires industrial-grade vibration (piezoelectric/high-G accelerometer) and AC current transformers, which are rarely available in general hackathon hardware pools.
+*   **Availability of Arduino Components:** HemaGrid runs on any basic Arduino Uno or compatible board. SynapseX requires the newer Arduino Uno Q (or equivalent ARM Cortex-M4/M85 MCU) to support Edge Impulse/TinyML runtimes, which are harder to acquire on short notice.
+*   **Dependency on Snapdragon Devices:** HemaGrid has a low dependency profile. Its face verification app runs on any Android or iOS device, and the demand forecasting model can execute on standard CPU runtimes if necessary. SynapseX is deeply dependent on specific Snapdragon mobile references and Snapdragon X Elite NPUs to run its on-device YOLOv8 and local SLM at acceptable latencies.
+*   **Availability of Backup Hardware:** Since HemaGrid's components are highly generic, they can be replaced immediately from peer kits or local hardware stores if damaged. If SynapseX's specific MCU or industrial sensor fails, finding a replacement during the 24-hour event is highly improbable.
+*   **Ease of Replacing Failed Hardware:** Replacing standard temperature sensors takes seconds. Calibrating and mapping new current or high-G vibration sensors takes hours, which is unacceptable during a live sprint.
+*   **Setup Complexity:** HemaGrid requires simple breadboard wiring and standard library imports. SynapseX requires building TinyML training rigs to capture vibration/current data, creating massive setup friction.
+
+> [!NOTE]
+> **Hackathon Assembly Advantage:** HemaGrid AI is significantly easier to physically assemble and program under tight deadlines. The hardware setup can be completed in under 3 hours, leaving the team with ample time to focus on software integration and user interface.
+
+---
+
+## Engineering Cost
+
+Engineering time is the most constrained resource in a 24-hour hackathon. The table below compares the estimated engineering resource allocation.
+
+| Dimension | Idea 1: HemaGrid AI | Idea 2: SynapseX | Analysis & Comparison |
+| :--- | :--- | :--- | :--- |
+| **Person-Hours Required** | ~36 Person-Hours | ~75 Person-Hours | SynapseX requires more than double the engineering capacity, exceeding a 3-person team limit. |
+| **Team Workload** | Balanced (Clean modular split) | Overloaded (Heavy focus on compilation & NPU binding) | HemaGrid allows parallelized frontend, backend, and hardware paths. |
+| **Parallel Development**| High (Modular boundaries) | Low-Medium (Sequential dependencies on model outputs) | SynapseX developers will block each other waiting for model integrations. |
+| **Integration Effort** | Low (Standard JSON schemas) | High (Multi-agent payload orchestration, text-to-SLM prompts)| Structuring and testing multi-agent telemetry is highly error-prone. |
+| **Testing Effort** | Low (Sensor data simulation scripts) | High (Physical engine testing, voice command scenarios) | Testing a physical engine anomaly requires simulating physical defects. |
+| **Debugging Effort** | Low (Local consoles, standard logs) | Extreme (Chained NPU runtimes, memory leaks, latency checks) | Tracking issues across MCU, Mobile, AI PC, and Cloud is extremely difficult. |
+| **Opportunity Cost** | Low (Quick wins allow focus on UI/demo) | High (All time spent debugging compilers, neglecting demo polish)| SynapseX leaves no time for branding, pitching, or UX. |
+
+---
+
+## Time Cost
+
+Time breakdown estimates for a 4-person team (Totaling 96 active hours of engineering capacity):
+
+```text
+HemaGrid AI:
+[||||||||] Hardware Setup (8 hrs)
+[||||||||||||||||] AI & Logic Models (16 hrs)
+[||||||||||||] Integration (12 hrs)
+[||||||] Debugging (6 hrs)
+[||||||||||] Demo Preparation & UI Polish (10 hrs)
+Buffer: 44 hrs (Shared across tasks / Sleep / Presentation rehearsal)
+
+SynapseX:
+[||||||||||||||||] Hardware Setup & Calibration (16 hrs)
+[||||||||||||||||||||||||||||||||] AI & Model Compilation (32 hrs)
+[||||||||||||||||||||] Integration & Prompting (20 hrs)
+[||||||||||||||||] Debugging & Quantization (16 hrs)
+[||||||||] Demo Prep & UI (8 hrs)
+Buffer: 4 hrs (Critically narrow window, zero room for error)
+```
+
+*   **Buffer Analysis:** HemaGrid AI leaves a substantial time buffer, allowing the team to refine the dashboard's design, practice the pitch, and build solid fallback mocks. SynapseX consumes almost all engineering bandwidth, leaving the team with zero buffer if any of the hardware or compiler integrations stall.
+
+---
+
+## Resource Dependency Analysis
+
+Analyzing dependencies highlights potential external blockers that can stall development.
+
+| Dependency Type | HemaGrid AI Rating | SynapseX Rating | Key Differences |
+| :--- | :---: | :---: | :--- |
+| **Hardware Dependency** | Low | **High** | SynapseX depends on specific MCUs, sensors, and Snapdragon platforms. |
+| **Software Dependency** | Low | **High** | SynapseX requires Edge Impulse SDK, Whisper, and YOLO. |
+| **SDK Dependency** | Low | **High** | SynapseX depends on QAIRT SDK and ONNX Runtime QNN Execution Provider. |
+| **Qualcomm Tooling** | Medium | **High** | HemaGrid can run on CPU if needed; SynapseX depends on Hexagon NPUs. |
+| **Internet Dependency** | Medium | Low | HemaGrid uses cloud syncing; SynapseX relies mostly on edge computing. |
+| **Cloud Dependency** | Medium | Medium | HemaGrid syncs regional data; SynapseX queries historical signature DBs. |
+| **External API Dependency**| Low | Low | Both keep processing local to the system nodes where possible. |
+
+---
+
+## Cost-to-Impact Analysis
+
+Maximizing return on engineering effort (ROEE) is critical for winning a hackathon.
+
+*   **Total Estimated Prototype Cost:** HemaGrid AI (~$85) vs. SynapseX (~$300-$350).
+*   **Engineering Effort:** HemaGrid AI (~36 person-hours) vs. SynapseX (~75 person-hours).
+*   **Expected Demo Quality:** HemaGrid AI will showcase a high-fidelity, polished, responsive frontend with a physical interactive trigger. SynapseX will likely result in a console-based terminal interface with high execution latency.
+*   **Expected Judge Impact:** HemaGrid AI scores high on immediate comprehensibility and social utility. SynapseX scores high on systems engineering depth, but only if the entire chain works flawlessly—a gamble that rarely pays off in a 24-hour sprint.
+*   **Return on Engineering Effort (ROEE):**
+    *   *HemaGrid AI:* High ROEE. With low hardware cost and moderate engineering effort, the team delivers a highly visual, emotionally resonant, working medical supply prototype.
+    *   *SynapseX:* Low-Medium ROEE. Despite high hardware cost and extreme engineering effort, the resulting demo is highly abstract and carries a 60% chance of failing completely during presentation.
+
+---
+
 ## Demo Comparison
 
 *   **HemaGrid AI Demo Strength:** Highly interactive, tangible, and easy for non-technical judges to understand within 3 minutes.
@@ -258,12 +373,14 @@ Scores are out of 10, indicating potential performance under strict 24-hour cons
 
 ## Why We Selected This Project
 
-Our decision is guided by strict engineering pragmatism:
+Our decision is guided by strict engineering pragmatism and a multi-dimensional analysis:
 
-1.  **Compilation Safety:** Compiling an SLM and a mobile computer vision pipeline on Snapdragon hardware via the QAIRT SDK in 24 hours introduces high compiler toolchain risk. HemaGrid AI uses lightweight models with CPU fallbacks, insulating the team from NPU compilation blockers.
-2.  **High Interactive Value:** Live software demos are highly effective when they include physical components. HemaGrid's sensor-based cold-box setup allows immediate, tactile interactions that demonstrate system value in seconds.
-3.  **Low Integration Overhead:** HemaGrid separates tasks cleanly. Development tasks can run in parallel without blocking, whereas SynapseX requires a fully integrated chain of edge classifications to evaluate the central SLM.
-4.  **Societal Impact:** Medical cold chain security and fraud prevention are highly relatable, compelling stories that appeal to both technical and business judges.
+1.  **Technical Feasibility & Execution Probability:** HemaGrid AI features a modular, parallelizable architecture. By avoiding complex multi-agent synchronization and deep dependencies on experimental NPU compilers, we achieve a **90%+ chance of completing a fully functional prototype** in 24 hours.
+2.  **Innovation & Snapdragon Ecosystem Alignment:** While SynapseX has higher conceptual novelty, HemaGrid AI provides a robust, end-to-end demonstration of Snapdragon technology. It integrates a Snapdragon AI PC as an on-site intelligence hub running local demand forecasting models, proving the value of edge-based hospital coordination.
+3.  **Demo Quality & Interactive Value:** Live demos are won by tangible, physical proof of concept. Shaking a physical cooler box to trigger real-time sensor alerts on a beautiful dashboard is a reliable, high-impact demonstration. SynapseX is highly abstract and vulnerable to high inference latency or complete system freezing.
+4.  **Cost Efficiency & Hardware Availability:** HemaGrid's sensor stack (DHT22, ADXL345) and standard microcontrollers cost ~$85 and are highly available with abundant backup units. SynapseX requires expensive, specialized hardware (~$300+) that is difficult to replace or recalibrate quickly.
+5.  **Engineering & Time Cost:** HemaGrid AI requires ~36 person-hours to build, leaving a comfortable time buffer for team coordination and presentation preparation. SynapseX requires ~75 person-hours, consuming all buffer and leaving zero margin for integration issues.
+6.  **Risk vs. Reward:** SynapseX carries a high risk of NPU driver mismatches and compiler errors (85% probability) which can render the core demo non-functional. HemaGrid AI mitigates this risk through a graceful CPU/ONNX fallback, ensuring we deliver a polished, stable, and winning demo.
 
 ---
 
