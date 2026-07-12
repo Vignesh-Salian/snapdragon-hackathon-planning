@@ -127,17 +127,16 @@ Pipeline must be reusable during inference.
 
 ## Feature 3 — Model Training
 
-Train a Scikit-Learn regression model.
+Train a regression model compatible with Hexagon NPU acceleration (avoiding tree ensembles like Random Forest or XGBoost which are unsupported by the QNN Execution Provider and will fall back to CPU).
 
 Recommended baseline:
 
-- Random Forest Regressor
+- Scikit-Learn MLPRegressor (Multi-Layer Perceptron) or a PyTorch Neural Network
 
 Optional comparison:
 
-- XGBoost
-- Gradient Boosting
-- Extra Trees
+- Simple Feed-Forward Neural Network (using PyTorch or Keras)
+- Ridge/Linear Regression (for low latency)
 
 Target
 
@@ -164,7 +163,7 @@ R² > 0.75
 Convert the trained scikit-learn pipeline to ONNX format using `skl2onnx` (or to LiteRT `.tflite` format).
 
 Requirements:
-- **NPU Compatibility:** No custom operators. Ensure all layers are compatible with the Hexagon NPU.
+- **NPU Compatibility:** No custom operators. Ensure all layers are compatible with the Hexagon NPU. Note: Tree-based ensemble operators (e.g. `TreeEnsembleRegressor` from Random Forest or XGBoost) are unsupported by the QNN execution provider and will fall back to CPU. Use neural network models (like Multi-Layer Perceptron).
 - **Quantization:** Quantize the model to **INT8** using Qualcomm AI Hub or `onnxruntime.quantization.quantize_static`. Quantizing to INT8 is mandatory to run on Snapdragon NPUs; FP32 models will silently fall back to CPU.
 - **Calibration Data:** Use 10-100 real validation data samples during the quantization calibration pass. Do not use random noise.
 - **Inference Runtime:** Execute predictions using `onnxruntime` with the **QNN Execution Provider** (`QNNExecutionProvider` referencing the `QnnHtp.dll` / `libQnnHtp.so` backend library).
@@ -297,7 +296,7 @@ This improves transparency during hackathon demonstrations.
 
 ### Hours 00–06 (Phase 1: Data & Training)
 - Dataset generation and validation.
-- Pipeline pre-processing and training Random Forest baseline model.
+- Pipeline pre-processing and training MLP Neural Network baseline model.
 
 ### Hours 06–12 (Phase 2: ONNX Compilation)
 - ONNX model conversion and validation.

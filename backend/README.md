@@ -54,10 +54,27 @@ Mithun is responsible for designing, developing, and deploying the centralized F
 ### APIs to Expose
 *   `GET /api/v1/inventory/{hospital_id}` -> Fetches blood levels.
 *   `POST /api/v1/inventory/update` -> Body: `{hospital_id, blood_type, units_added_removed}`.
-*   `POST /api/v1/telemetry/report` -> Body: `{device_id, uptime_ms, telemetry, status}`.
+*   `POST /api/v1/telemetry/report` -> Body:
+    ```json
+    {
+      "device_id": "string",
+      "uptime_ms": 12345,
+      "telemetry": {
+        "temperature": 4.5,
+        "humidity": 45.2,
+        "shock_g": 0.8
+      },
+      "status": "SAFE" // (SAFE, WARNING, or COMPROMISED)
+    }
+    ```
 *   `WebSocket /ws/live` -> Stream dashboard updates.
+*   **API Gateway Proxy Delegates (handles CORS and microservice routing):**
+    *   `POST /api/v1/donor/enroll-delegate` -> Payload: `{"name": "string", "image_b64": "string"}`. Proxies to Vignesh's service on port `8000`.
+    *   `POST /api/v1/donor/verify-delegate` -> Payload: `{"image_b64": "string"}`. Proxies to Vignesh's service on port `8000`.
+    *   `POST /api/v1/predict/demand-delegate` -> Payload: 15-field forecasting JSON. Proxies to Tejas's service on port `8001`.
 
-### APIs to Consume
+### APIs to Consume (Internal Microservices)
+*   `POST http://127.0.0.1:8000/api/v1/donor/enroll` (Vignesh's module)
 *   `POST http://127.0.0.1:8000/api/v1/donor/verify` (Vignesh's module)
 *   `POST http://127.0.0.1:8001/api/v1/predict/demand` (Tejas's module)
 
@@ -66,6 +83,7 @@ Mithun is responsible for designing, developing, and deploying the centralized F
 ## 6. Non-Functional Requirements
 
 *   **Performance:** Telemetry database write sequence must take `<30ms`.
+*   **Database:** Use SQLite Write-Ahead Logging (WAL) mode (`PRAGMA journal_mode=WAL;`) to prevent database locks during concurrent telemetry writes and proxy reads.
 *   **Reliability:** Auto-reconnect handlers for database pools; graceful API error mappings.
 *   **Documentation:** Expose OpenAPI Swagger schema documentation on startup.
 

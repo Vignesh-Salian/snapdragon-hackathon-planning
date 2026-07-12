@@ -88,7 +88,7 @@ snapdragon-hackathon-planning/
 
 1.  **Core Backend (Mithun):** Central routing hub, SQLite schema manager, WebSocket connection broker, and HTTP proxy clients.
 2.  **Frontend Dashboard (Shaun):** React charting layouts, stateful alerts, and real-time inventory administration UI.
-3.  **AI Intelligence (Tejas):** Dataset synthetics, Random Forest regressor, ONNX conversion compile pipeline, and prediction endpoint.
+3.  **AI Intelligence (Tejas):** Dataset synthetics, Multi-Layer Perceptron (MLP) Neural Network regressor, ONNX conversion compile pipeline, and prediction endpoint.
 4.  **Donor Verification (Vignesh):** MediaPipe Face Mesh landmark extraction, SQLite donor enrollment storage, and similarity search.
 5.  **Smart Cold Box (Hardware):** Arduino C++ telemetry monitoring, state evaluation logic, LED alerts, and serial printer.
 
@@ -104,11 +104,31 @@ snapdragon-hackathon-planning/
 
 ---
 
-## 8. API Ownership
+## 8. API Ownership & Schemas
 
-*   **Mithun:** Owns `/api/v1/inventory/*`, `/api/v1/telemetry/*`, `/ws/live`, and proxy handlers `/api/v1/donor/verify-delegate` and `/api/v1/predict/demand-delegate`.
-*   **Vignesh:** Owns `/api/v1/donor/enroll` and `/api/v1/donor/verify`.
-*   **Tejas:** Owns `/api/v1/predict/demand`.
+### API Gateway Proxies (Mithun)
+*   **Mithun (Backend Hub)** acts as the API Gateway. External clients (like the Dashboard) must interact through these proxy endpoints rather than calling the isolated microservices directly, preventing CORS issues and centralizing traffic:
+    *   `POST /api/v1/donor/enroll-delegate` -> Proxies to Vignesh's `/api/v1/donor/enroll`
+    *   `POST /api/v1/donor/verify-delegate` -> Proxies to Vignesh's `/api/v1/donor/verify`
+    *   `POST /api/v1/predict/demand-delegate` -> Proxies to Tejas's `/api/v1/predict/demand`
+*   **Mithun** also directly owns `/api/v1/inventory/*`, `/api/v1/telemetry/*`, and the real-time WebSocket channel `/ws/live`.
+*   **Vignesh** owns the internal `/api/v1/donor/enroll` and `/api/v1/donor/verify` microservice endpoints.
+*   **Tejas** owns the internal `/api/v1/predict/demand` microservice endpoint.
+
+### Master Telemetry JSON Schema (`POST /api/v1/telemetry/report`)
+The hardware module and backend must strictly conform to the following telemetry schema:
+```json
+{
+  "device_id": "string",
+  "uptime_ms": 12345,
+  "telemetry": {
+    "temperature": 4.5,
+    "humidity": 45.2,
+    "shock_g": 0.8
+  },
+  "status": "SAFE" // (SAFE, WARNING, or COMPROMISED)
+}
+```
 
 ---
 

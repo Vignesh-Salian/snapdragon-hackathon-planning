@@ -60,7 +60,7 @@ This repository contains the system specification and individual developer READM
 | **Frontend** | React, TypeScript, TailwindCSS, Chart.js | Web Browser |
 | **AI Engine** | Python, Scikit-Learn, ONNX Runtime | Hexagon NPU (via QNN EP) |
 | **Face Recognition** | Python, OpenCV, MediaPipe | CPU / GPU / Mobile NPU |
-| **IoT Node** | Arduino C++, Temp Sensor, Accelerometer | Arduino UNO R4 WiFi / Minima |
+| **IoT Node** | Arduino C++, Temp Sensor, Accelerometer | Arduino UNO Q |
 
 ---
 
