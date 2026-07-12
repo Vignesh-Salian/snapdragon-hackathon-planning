@@ -71,6 +71,8 @@ Vignesh is responsible for integrating MediaPipe Face Mesh, building the Euclide
 ## 6. Non-Functional Requirements
 
 *   **Performance:** Verification requests must complete in `<300ms` for 1,000 donor records.
+*   **NPU Acceleration:** Implement the face mesh landmark extraction model using **LiteRT** (`.tflite` model) or **ExecuTorch** (`.pte` model), compiled to **INT8** using Qualcomm AI Hub for target SM8850 (Snapdragon 8 Elite NPU v81).
+*   **NPU Library setup:** Bundle necessary QNN libraries (`libLiteRtDispatch_Qualcomm.so`, `libQnnHtp.so`, etc.) inside the runtime folder for NPU acceleration.
 *   **Reliability:** Return `400 Bad Request` if no face is found in the photo.
 *   **Scalability:** SQLite indexing on `enrolled_at` column to speed up lookup requests.
 

@@ -7,15 +7,15 @@
 
 ## 1. Module Overview
 
-*   **Purpose:** Develop Arduino UNO Q firmware to monitor shipment temperature and shock/vibration levels, evaluate safety states, and stream structured telemetry over serial interfaces.
-*   **Scope:** Arduino C++ firmware, DHT22 sensor integration, ADXL345 accelerometer integration, status indicators (LEDs/buzzer), and serial serialization.
-*   **Success Criteria:** Non-blocking 1 Hz sensor polling loops, state updates matching thresholds, and stable JSON frames outputted at 115200 baud.
+*   **Purpose:** Develop a dual-brain edge application on the Arduino UNO Q to monitor blood shipment temperature and shock levels, evaluate safety states, and stream telemetry.
+*   **Scope:** Zephyr-based STM32U585 MCU C++ sketch (sensing and control), Qualcomm Dragonwing QRB2210 MPU Python daemon (logging, analytics, networking), and Bridge RPC libraries.
+*   **Success Criteria:** Non-blocking 1 Hz sensor polling on MCU, real-time Bridge RPC RPC functions exposed to Linux, stable direct-to-backend WebSockets via MPU WiFi, and zero serial lockups.
 
 ---
 
 ## 2. Responsibilities
 
-The Hardware Team is responsible for wiring the sensors and indicators, writing non-blocking polling loops, implementing threshold rules, generating structured JSON payloads, and documenting circuit connections.
+The Hardware Team is responsible for wiring the DHT22 and ADXL345 to the Arduino UNO Q headers, writing the MCU Zephyr sketch, establishing the MPU Python environment inside Arduino App Lab, registering Bridge RPC functions, and configuring MPU-controlled status LEDs.
 
 ---
 
@@ -23,97 +23,94 @@ The Hardware Team is responsible for wiring the sensors and indicators, writing 
 
 *   **Folder Scope:** `/hardware`
 *   **Files Owned:**
-    *   `hardware/firmware/smart_cold_box/smart_cold_box.ino`
-    *   `hardware/schematics/connections.md`
-    *   `hardware/tests/mock_serial_reader.py`
-    *   `hardware/docs/standards_and_milestones.md`
+    *   `hardware/my_app/app.yaml` (App Lab layout config)
+    *   `hardware/my_app/sketch/sketch.ino` (MCU Zephyr sketch code)
+    *   `hardware/my_app/sketch/sketch.yaml` (MCU compile configuration)
+    *   `hardware/my_app/python/main.py` (MPU Python execution daemon)
+    *   `hardware/my_app/python/requirements.txt` (MPU package dependencies)
+    *   `hardware/schematics/connections.md` (Pins mapping and schematics)
+    *   `hardware/tests/mock_serial_reader.py` (Local COM testing helper)
 
 ---
 
 ## 4. Functional Requirements
 
-### Feature 1: Sensor Polling Loop
-*   *Task:* Query DHT22 and ADXL345 sensors at a non-blocking 1 Hz frequency using `millis()`.
+### Feature 1 — MCU Telemetry Acquisition
+*   *Task:* Program the STM32U585 MCU to poll DHT22 (temperature/humidity) and ADXL345 (I2C accelerometer) at 1 Hz using Zephyr non-blocking timers.
+*   *Task:* Expose readings as service functions using the Arduino Bridge RPC library (`Bridge.begin()`, `Bridge.provide()`).
 
-### Feature 2: Threshold Engine
-*   *Task:* Compare metrics locally to classify state (SAFE, WARNING, COMPROMISED).
-*   *Task:* Drive status LEDs and piezo alarms to represent state changes.
+### Feature 2 — MPU State Evaluation & Networking
+*   *Task:* Write a Python daemon (`main.py`) running on the QRB2210 MPU that queries the MCU via the Bridge RPC client.
+*   *Task:* Implement safety threshold rules in Python. Trigger local status updates.
+*   *Task:* Establish direct WiFi connection to the backend and stream telemetry frames using standard WebSockets.
 
-### Feature 3: Serial Payload Generator
-*   *Task:* Format and stream telemetry data as structured JSON strings over serial UART.
+### Feature 3 — Dual-Processor Indicators
+*   *Task:* Program the MCU to drive status LEDs #3 & #4 and the buzzer based on calculated state.
+*   *Task:* Program the MPU to drive user LEDs #1 & #2 on the Linux filesystem (`/sys/class/leds/`) to display warning indicators.
 
 ---
 
 ## 5. Technical Responsibilities
 
-### Telemetry Packet Output (Serial USB)
-*   **Baud Rate:** `115200`
-*   **Payload Format:**
-    ```json
-    {
-      "device_id": "cold_box_001",
-      "uptime_ms": 124500,
-      "telemetry": {
-        "temperature_c": 4.2,
-        "humidity_pct": 52.3,
-        "acceleration_g": 0.12,
-        "max_impact_g": 1.45
-      },
-      "status": {
-        "state": "SAFE",
-        "flags": {
-          "temp_breached": false,
-          "impact_breached": false
-        }
-      }
-    }
-    ```
+### Bridge RPC API Exposed (MCU to MPU)
+*   `float get_temp()` -> Returns DHT22 temperature.
+*   `float get_shock()` -> Returns ADXL345 max shock.
+*   `void trigger_buzzer(bool active)` -> Enables/disables the active buzzer on D11.
+
+### Telemetry Packet Format (MPU to Backend)
+*   **Protocol:** WebSocket or HTTP JSON payload via WiFi.
+*   **Schema:** Matches the master `IMPLEMENTATION_PLAN.md` specification.
+
+### Hardware Details
+*   **Compute Block:** MPU (Cortex-A53 @ 2.0 GHz) + MCU (Cortex-M33 @ 160 MHz).
+*   **Power:** USB-C Power Delivery dongle is required; the board will not boot without PD support.
+*   **Bridge Lockout:** Do not access `Serial1` on the MCU directly as it is reserved for the `arduino-router` RPC link.
 
 ---
 
 ## 6. Non-Functional Requirements
 
-*   **Performance:** Telemetry data must be evaluated and outputted within **100ms** of a threshold violation.
-*   **Reliability:** Strict non-blocking architecture; zero dynamic memory allocations (`malloc` or `String` library).
-*   **Safety:** Flash string optimization using the `F()` macro to keep dynamic RAM utilization low.
+*   **Performance:** Telemetry data must be fetched and pushed to the backend within **150ms** of acquisition.
+*   **Memory Constraints:** The MCU firmware must stay under `786 kB SRAM` limit.
+*   **Reliability:** MPU daemon must implement auto-reconnect loops for both the Bridge RPC client and WiFi host links.
 
 ---
 
 ## 7. Deliverables
 
-*   Arduino C++ firmware source file.
-*   Physical circuit schematics document.
-*   Python serial validation utility.
-*   Standards and guidelines document.
+*   Arduino C++ sketch and App Lab configurations.
+*   Python MPU background script.
+*   Physical pinout schematics.
+*   Mock testing utilities.
 
 ---
 
 ## 8. Development Milestones
 
-*   **Hours 00–06 (Phase 1: Wiring & Inputs):** Connect DHT22 and ADXL345 to Arduino breadboard and verify raw sensor registers.
-*   **Hours 06–12 (Phase 2: State Logic):** Program non-blocking timer loops, implement safety thresholds, and map Green/Yellow/Red status LEDs.
-*   **Hours 12–18 (Phase 3: Serial Stream):** Compile and print structured JSON frames to UART port at 115200 baud.
-*   **Hours 18–24 (Phase 4: Calibration & Box Assembly):** Assemble the physical box compartment, test shock tap triggers, and run python validator checks.
+*   **Hours 00–06 (Phase 1: Wiring & Inputs):** Connect sensors to UNO Q headers; verify basic reading via MCU serial console.
+*   **Hours 06–12 (Phase 2: Bridge RPC Setup):** Register sensor get functions on the MCU and verify MPU-to-MCU Bridge calls.
+*   **Hours 12–18 (Phase 3: MPU Logic & WiFi):** Build the threshold evaluation loop and establish WebSocket communication on MPU.
+*   **Hours 18–24 (Phase 4: Calibration & Box Assembly):** Assemble the physical box compartment, verify MPU/MCU LED controls, and calibrate shock thresholds.
 
 ---
 
 ## 9. Dependencies & Module Boundaries
 
-*   **What Depends On You:** Mithun (Core Backend USB daemon reads your serial stream).
+*   **What Depends On You:** Mithun (Core Backend consumes your telemetry JSON frames).
 *   **Module Boundaries:** Do not modify code files inside `/backend`, `/dashboard`, `/ai-engine`, or `/face-recognition`.
 
 ---
 
 ## 10. Acceptance Criteria
 
-*   Buzzer pulses and red LED illuminates during COMPROMISED state.
-*   JSON outputs match the validation schema.
-*   Firmware memory footprint is $<60\%$ dynamic RAM.
+*   Buzzer sounds and Red LED illuminates during COMPROMISED state.
+*   MPU successfully connects to the backend and pushes JSON frames.
+*   RPC calls operate without latency blocks or connection timeouts.
 
 ---
 
 ## 11. Integration Checklist
 
-- [ ] Confirm UART baud rate is locked at `115200`.
-- [ ] Verify sensors read correct temperature values in test compartments.
-- [ ] Confirm python serial test script validates payloads without JSON syntax errors.
+- [ ] Confirm USB-C Power Delivery is active.
+- [ ] Verify local MPU connection to the backend WebSocket broker.
+- [ ] Confirm Bridge client executes RPC functions without error logs.

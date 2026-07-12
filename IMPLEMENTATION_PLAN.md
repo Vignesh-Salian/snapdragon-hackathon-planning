@@ -22,20 +22,25 @@ The project aims to solve critical logistics bottlenecks in blood supply managem
 ## 3. System Architecture
 
 ```text
++-------------------------------------------------+
+|          Smart Cold Box (Arduino UNO Q)        |
+|  +--------------------+   Bridge   +---------+  |
+|  | MPU: Linux (Python)|◄=========='| MCU: C++|  |
+|  +---------┬----------+            +----+----+  |
++------------│----------------------------│-------+
+             │                            │ Read Telemetry
+             │ WiFi / WS (JSON)           ▼
+             │                      [Sensors: Temp, Accel]
+             v
 +---------------------------------------+
-|        Smart Cold Box (Arduino)       |
-+-------------------┬-------------------+
-                    │ Serial JSON (USB)
-                    v
-+---------------------------------------+
-|           Core Backend (FastAPI)      |
+|        Core Backend Hub (FastAPI)     |
 +----┬──────────────────────┬─────────┬-+
      │                      │         │
      │ HTTP POST            │         │ HTTP POST
      v                      │         v
 +-------------------+       │       +--------------------+
 | Donor Verification|       │       | AI Intelligence    |
-| - MediaPipe Mesh  |       │       | - Demand Predictor |
+| - MediaPipe Mesh  |       │       | - LiteRT/ONNX (NPU)|
 +-------------------+       │       +--------------------+
                             │ WebSocket
                             v
@@ -49,11 +54,10 @@ The project aims to solve critical logistics bottlenecks in blood supply managem
 ## 4. High-Level Component Diagram
 
 ```text
-[Hardware Node] ────(UART/USB JSON)───► [Core Backend Hub] ◄───(WS JSON)───► [React Dashboard]
-                                                │
-                                                ├──(HTTP POST)──► [MediaPipe Face Module]
-                                                │
-                                                └──(HTTP POST)──► [ONNX Prediction Engine]
+[UNO Q: MCU] ───(Bridge RPC)───► [UNO Q: MPU] ───(WiFi WS/JSON)───► [Backend Hub] ◄───(WS)───► [Dashboard]
+                                                                        │
+                                                                        ├──(HTTP)──► [MediaPipe Face]
+                                                                        └──(HTTP)──► [LiteRT/QNN NPU Engine]
 ```
 
 ---
@@ -110,9 +114,9 @@ snapdragon-hackathon-planning/
 
 ## 9. Integration Strategy
 
-All modules are developed locally in isolation using mock payload generators. At week 3, local HTTP clients are pointed to the respective development hosts. During the 24-hour hackathon, we will:
-1.  Flash the Arduino and verify USB Serial binding on host PCs.
-2.  Configure QAIRT SDK bindings to execute Tejas's and Vignesh's models on Snapdragon NPUs.
+All modules are developed locally in isolation using mock payload generators. During the 24-hour hackathon, we will:
+1.  Deploy Arduino sketches and Python daemons using Arduino App Lab to compile and launch MPU/MCU code on the UNO Q.
+2.  Configure ONNX Runtime QNN Execution Provider (using native libraries like `libQnnHtp.so` and `libQnnSystem.so`) to run Tejas's and Vignesh's models on the target Snapdragon Hexagon NPU.
 3.  Deploy the React dashboard to local test environments.
 
 ---
@@ -172,5 +176,6 @@ H20 - H24: Demo UI polishing, presentation script practice, and active staging.
 | Risk Description | Severity | Mitigation Plan |
 | :--- | :--- | :--- |
 | **Snapdragon NPU compiler mismatch**| Critical | Fallback to ONNX Runtime CPU execution. |
-| **Telemetry network drop** | High | Buffer sensor frames locally on Arduino flash. |
+| **Silent NPU Fallback** | High | Program verification checks using `get_ep_devices()` to ensure the QNN EP is active instead of silently falling back to CPU. |
+| **Telemetry network drop** | High | Buffer sensor frames locally on MPU storage, or stream via secondary serial USB fallbacks. |
 | **Face recognition false acceptance** | High | Tuned Euclidean threshold defaults inside SQLite. |

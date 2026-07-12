@@ -159,30 +159,22 @@ R² > 0.75
 
 ---
 
-## Feature 4 — ONNX Conversion
+## Feature 4 — Model Export & Compiling
 
-Convert trained pipeline using
+Convert the trained scikit-learn pipeline to ONNX format using `skl2onnx` (or to LiteRT `.tflite` format).
 
-```
-skl2onnx
-```
+Requirements:
+- **NPU Compatibility:** No custom operators. Ensure all layers are compatible with the Hexagon NPU.
+- **Quantization:** Quantize the model to **INT8** using Qualcomm AI Hub or `onnxruntime.quantization.quantize_static`. Quantizing to INT8 is mandatory to run on Snapdragon NPUs; FP32 models will silently fall back to CPU.
+- **Calibration Data:** Use 10-100 real validation data samples during the quantization calibration pass. Do not use random noise.
+- **Inference Runtime:** Execute predictions using `onnxruntime` with the **QNN Execution Provider** (`QNNExecutionProvider` referencing the `QnnHtp.dll` / `libQnnHtp.so` backend library).
+- **Power Configuration:** Configure the session to use the `balanced` power profile for single interactive inference requests.
 
-Requirements
-
-- No custom operators
-- Snapdragon compatible
-- ONNX Runtime compatible
-
-Prediction parity
-
+Prediction parity:
 ```
 Difference < 0.01
 ```
-
-between
-
-- Scikit-Learn
-- ONNX Runtime
+between scikit-learn and NPU/ONNX runtime.
 
 ---
 
@@ -279,23 +271,12 @@ This improves transparency during hackathon demonstrations.
 
 # 8. Non-Functional Requirements
 
-Inference latency
-
-```
-< 50 ms
-```
-
-ONNX parity
-
-```
-< 0.01
-```
-
-Memory efficient
-
-Compatible with Snapdragon X Elite
-
-Ready for Qualcomm QAIRT compilation
+*   **Inference Latency:** `< 50 ms` under local CPU/NPU execution.
+*   **ONNX/LiteRT Parity:** Output difference between scikit-learn and NPU runtime must be `< 0.01`.
+*   **NPU Execution Verification:** Program verification checks in python using `get_ep_devices()` to verify the execution provider is active. Do not trust `onnxruntime.get_available_providers()` as it does not list QNN EP in version 2.x.
+*   **Target Platform:** Snapdragon X Elite (Hexagon v73 NPU, 45 TOPS).
+*   **Quantization Mode:** Mandatory static INT8 quantization mapping. FP32 models will silently fall back to CPU execution.
+*   **Memory Efficiency:** Quantized ONNX weights under 5MB footprint.
 
 ---
 
@@ -370,8 +351,8 @@ Do not modify
 # 13. Integration Checklist
 
 - [ ] FastAPI running on port 8001
-- [ ] ONNX Runtime verified
-- [ ] Prediction endpoint working
-- [ ] Backend integration complete
-- [ ] Dashboard receives predictions
-- [ ] QAIRT compilation tested
+- [ ] ONNX Runtime QNN Execution Provider verified via `get_ep_devices()` (prints `True`)
+- [ ] Prediction endpoint working with 15-field request payload
+- [ ] Backend integration complete (routes proxy demand-delegate queries)
+- [ ] Dashboard receives predictions and renders Explainable AI (XAI) contributors
+- [ ] QAIRT/AI Hub compilation tested and outputting INT8 quantized models using real calibration data
