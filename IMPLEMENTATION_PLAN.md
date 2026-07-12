@@ -154,26 +154,15 @@ All modules are developed locally in isolation using mock payload generators. At
 
 ---
 
-## 13. Development Timeline (Pre-Hackathon)
+## 13. 24-Hour Hackathon Development Timeline
 
 ```text
-Week 1: Folder scoping, interface contracts frozen, and DB schemas declared.
-Week 2: Core modules implemented with local test configurations.
-Week 3: Integration checkpoints: HTTP clients connected across local hosts.
-Week 4: Dry runs with simulated payloads and edge-case testing.
-```
-
----
-
-## 14. Hackathon Integration Timeline (24-Hour Event)
-
-```text
-H00 - H02: Environment configuration: QAIRT SDK setup and NPU validation.
-H02 - H06: USB serial binding checks and physical sensor calibration.
-H06 - H12: Compile AI models (ONNX -> QNN Hexagon NPU libraries).
-H12 - H18: End-to-end telemetry system stress tests.
-H18 - H22: Demo UI polishing and presentation scripting.
-H22 - H24: Active presentation mode: Live evaluation run.
+H00 - H04: Parallel core scaffolding (FastAPI endpoints, React panels, Arduino breadboard, ML training).
+H04 - H08: Local model completion (ONNX compilation, Face detection setup) & sensor state evaluation mapping.
+H08 - H12: NPU Integration: Port AI demand models and face verification to Snapdragon Hexagon NPU libraries.
+H12 - H16: System Integration: Link HTTP clients to backend proxies and establish WebSocket dashboard connections.
+H16 - H20: End-to-end system testing, sensor threshold calibration, and edge case resolution.
+H20 - H24: Demo UI polishing, presentation script practice, and active staging.
 ```
 
 ---
