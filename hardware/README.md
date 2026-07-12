@@ -90,10 +90,10 @@ The Hardware Team is responsible for wiring the sensors and indicators, writing 
 
 ## 8. Development Milestones
 
-*   **Week 1:** Sensors wired and value reading validated.
-*   **Week 2:** State logic and indicator LEDs validated.
-*   **Week 3:** JSON serialization verified over serial interfaces.
-*   **Week 4:** Physical enclosure built; serial telemetry validation complete.
+*   **Hours 00–06 (Phase 1: Wiring & Inputs):** Connect DHT22 and ADXL345 to Arduino breadboard and verify raw sensor registers.
+*   **Hours 06–12 (Phase 2: State Logic):** Program non-blocking timer loops, implement safety thresholds, and map Green/Yellow/Red status LEDs.
+*   **Hours 12–18 (Phase 3: Serial Stream):** Compile and print structured JSON frames to UART port at 115200 baud.
+*   **Hours 18–24 (Phase 4: Calibration & Box Assembly):** Assemble the physical box compartment, test shock tap triggers, and run python validator checks.
 
 ---
 

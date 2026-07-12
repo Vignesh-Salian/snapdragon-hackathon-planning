@@ -79,10 +79,10 @@ Shaun is responsible for designing, styling, and coding the React application us
 
 ## 8. Development Milestones
 
-*   **Week 1:** React project configured; base dashboard components structured.
-*   **Week 2:** Implement WebSocket hook; bind UI state changes to incoming frames.
-*   **Week 3:** Connect forms to Backend API wrapper client.
-*   **Week 4:** UI layout adjustments and testing across diverse resolutions.
+*   **Hours 00–06 (Phase 1: Structure & Charts):** Scaffold React application with TypeScript and Tailwind, and build mock charting panels.
+*   **Hours 06–12 (Phase 2: WebSocket Binding):** Implement custom WebSocket client hooks and bind active dashboard updates to incoming packages.
+*   **Hours 12–18 (Phase 3: Control & Alert Modals):** Build warning triggers, fraud modals, and inventory form connections.
+*   **Hours 18–24 (Phase 4: Design Polish & Presentation):** Polish layout styles for presentation mode on tablets and perform end-to-end client checks.
 
 ---
 

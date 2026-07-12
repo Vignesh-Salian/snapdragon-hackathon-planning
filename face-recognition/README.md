@@ -87,10 +87,10 @@ Vignesh is responsible for integrating MediaPipe Face Mesh, building the Euclide
 
 ## 8. Development Milestones
 
-*   **Week 1:** MediaPipe integration verified; single-image landmark extraction functional.
-*   **Week 2:** SQLite database schemas and query lookups validated.
-*   **Week 3:** FastAPI endpoints established; duplicate verification response format validated.
-*   **Week 4:** Unit tests completed.
+*   **Hours 00–06 (Phase 1: Model & Detection):** Initialize MediaPipe Face Mesh and build standard landmark extraction helpers.
+*   **Hours 06–12 (Phase 2: Database Schema):** Setup SQLite donor enrollment schemas and write 56-day query lookup logic.
+*   **Hours 12–18 (Phase 3: Verification Logic):** Expose `/enroll` and `/verify` endpoints, calculate similarity Euclidean distance, and return duplicates.
+*   **Hours 18–24 (Phase 4: Unit Testing & Optimization):** Create mock face arrays unit tests and verify face mesh search completes under 300ms.
 
 ---
 

@@ -82,10 +82,10 @@ Mithun is responsible for designing, developing, and deploying the centralized F
 
 ## 8. Development Milestones
 
-*   **Week 1:** Initialize folder, configure SQLAlchemy, and pop data templates.
-*   **Week 2:** Complete WebSocket Connection Manager.
-*   **Week 3:** Connect async proxies to Vignesh's and Tejas's local services.
-*   **Week 4:** Verify multi-device broadcasts and prepare mock tests.
+*   **Hours 00–06 (Phase 1: Environment & Database):** Set up FastAPI scaffolding, configure SQLite tables, and verify CRUD/inventory endpoints.
+*   **Hours 06–12 (Phase 2: WebSocket & Streams):** Complete the WebSocket connection manager and telemetry intake endpoints.
+*   **Hours 12–18 (Phase 3: Service Integration):** Connect async HTTP proxies to Tejas's AI engine and Vignesh's face recognition service.
+*   **Hours 18–24 (Phase 4: Testing & Calibration):** Run integration tests, resolve latency delays, and verify active alert broadcasts.
 
 ---
 

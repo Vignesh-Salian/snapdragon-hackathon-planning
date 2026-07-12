@@ -1,125 +1,377 @@
 # Module Owner Assignment: AI Intelligence
 
-*   **Module Owner:** Tejas
-*   **Module Name:** Predictive Demand Forecasting Engine
+**Module Owner:** Tejas Nayak  
+**Module Name:** Predictive Blood Demand Forecasting & Inventory Intelligence Engine
 
 ---
 
-## 1. Module Overview
+# 1. Module Overview
 
-*   **Purpose:** Develop a forecasting model to predict regional blood demand, compile it to ONNX, and expose it via a REST API to support inventory optimization.
-*   **Scope:** Synthetic dataset generator, regression model training, ONNX conversion, and inference endpoints.
-*   **Success Criteria:** Model achieving $R^2 > 0.70$ on validation sets, inference response latency $<50\text{ms}$, and clean ONNX compilation output.
+## Purpose
 
----
+Develop an AI-powered blood demand forecasting engine capable of predicting future blood requirements for hospitals using historical demand trends, environmental conditions, hospital characteristics, and emergency indicators.
 
-## 2. Responsibilities
+The trained model will be exported to ONNX format for deployment on Qualcomm Snapdragon platforms using ONNX Runtime and QNN Execution Provider.
 
-Tejas is responsible for writing the dataset generation scripts, training the regression model (e.g. Random Forest), converting the weights to ONNX, and wrapping the output inside a FastAPI inference service.
+The module will also generate inventory recommendations and risk alerts to help blood banks maintain safe blood reserves.
 
 ---
 
-## 3. Repository Ownership
+# 2. Objectives
 
-*   **Folder Scope:** `/ai-engine`
-*   **Files Owned:**
-    *   `ai-engine/datasets/generate_sample_data.py`
-    *   `ai-engine/training/train.py`
-    *   `ai-engine/inference/predict.py`
-    *   `ai-engine/evaluation/evaluate.py`
-    *   `ai-engine/tests/test_model.py`
+The AI Engine should:
 
----
-
-## 4. Functional Requirements
-
-### Feature 1: Historical Data Generator
-*   *Task:* Generate a CSV dataset representing 1,000 days of mock hospital transactions (dengue cases, seasonal weather, baseline demand).
-
-### Feature 2: Model Training & Conversion
-*   *Task:* Train a scikit-learn regressor to predict expected daily units demanded.
-*   *Task:* Convert the trained pipeline to ONNX format using `skl2onnx`.
-
-### Feature 3: Prediction API
-*   *Task:* Expose a `/predict/demand` route.
-*   *Task:* Run model predictions using `onnxruntime` and return expected units and inventory levels.
+- Predict daily blood demand
+- Recommend minimum inventory levels
+- Generate inventory risk alerts
+- Run inference using ONNX Runtime
+- Support Snapdragon Hexagon NPU deployment
+- Expose prediction APIs for backend integration
 
 ---
 
-## 5. Technical Responsibilities
+# 3. Responsibilities
 
-### APIs to Expose
-*   `POST /api/v1/predict/demand`
-*   **Request Format:**
-    ```json
-    {
-      "hospital_id": "integer",
-      "hospital_type": "General | Trauma | Clinic",
-      "blood_type": "string",
-      "temperature_c": "float",
-      "dengue_cases_weekly": "integer",
-      "day_of_week": "integer",
-      "month": "integer"
-    }
-    ```
-*   **Response Format:**
-    ```json
-    {
-      "status": "success",
-      "predictions": {
-        "expected_demand_units": "float",
-        "recommended_min_inventory": "integer",
-        "alert_level": "SAFE | WARNING | CRITICAL"
-      }
-    }
-    ```
+Tejas is responsible for:
+
+- Designing and generating synthetic datasets
+- Building data preprocessing pipelines
+- Training regression models
+- Model evaluation
+- ONNX model conversion
+- FastAPI inference APIs
+- Prediction validation
+- Unit testing
 
 ---
 
-## 6. Non-Functional Requirements
+# 4. Repository Ownership
 
-*   **Performance:** Model inference must execute in `<50ms`.
-*   **ONNX Parity:** Prediction output variance between scikit-learn and ONNX Runtime must be $<0.01$.
-*   **Qualcomm Compilation Ready:** Avoid custom python layers to ensure seamless translation to Snapdragon Hexagon NPU libraries.
-
----
-
-## 7. Deliverables
-
-*   Synthetic dataset generator.
-*   Scikit-learn training code.
-*   Compiled ONNX model file.
-*   FastAPI inference endpoint.
-*   Unit tests checking input shape limits.
-
----
-
-## 8. Development Milestones
-
-*   **Week 1:** Data generation script completed; CSV training data generated.
-*   **Week 2:** Model training script completed; scikit-learn baseline evaluations validated.
-*   **Week 3:** ONNX conversion completed; preprocessor parameters serialized.
-*   **Week 4:** FastAPI prediction server and parity checking validated.
-
----
-
-## 9. Dependencies & Module Boundaries
-
-*   **What Depends On You:** Mithun (Core Backend forwards proxy requests to your API).
-*   **Module Boundaries:** Do not modify code files inside `/backend`, `/dashboard`, `/face-recognition`, or `/hardware`.
+```
+ai-engine/
+├── datasets/
+│      generate_sample_data.py
+│      blood_demand.csv
+├── preprocessing/
+│      preprocess.py
+├── training/
+│      train.py
+├── evaluation/
+│      evaluate.py
+├── inference/
+│      predict.py
+├── models/
+│      model.pkl
+│      model.onnx
+├── api/
+│      routes.py
+└── tests/
+       test_model.py
+```
 
 ---
 
-## 10. Acceptance Criteria
+# 5. Functional Requirements
 
-*   ONNX prediction outputs are verified as functionally correct and match scikit-learn training predictions.
-*   Unit tests execute with 100% pass rates.
-*   Model latency remains below target.
+## Feature 1 — Synthetic Dataset Generator
+
+Generate 5,000–10,000 realistic hospital transaction records.
+
+Each record represents one hospital's blood demand for one day.
+
+### Dataset Features
+
+| Feature | Description |
+|----------|-------------|
+| hospital_id | Hospital identifier |
+| hospital_type | General / Trauma / Clinic |
+| city_region | Urban / Semi-Urban / Rural |
+| blood_type | O+, A+, B+, AB+, O-, etc. |
+| day_of_week | 1–7 |
+| month | 1–12 |
+| season | Summer / Monsoon / Winter |
+| temperature_c | Daily temperature |
+| rainfall_mm | Rainfall |
+| dengue_cases_weekly | Weekly dengue count |
+| road_accidents | Accident cases |
+| emergency_cases | Daily emergencies |
+| scheduled_surgeries | Planned surgeries |
+| holiday | Yes/No |
+| blood_donation_camp | Yes/No |
+| current_inventory | Current stock |
+| expected_demand_units | Target variable |
+
+Dataset relationships should simulate realistic healthcare scenarios rather than random values.
+
+Examples:
+
+- Higher dengue → Higher platelet demand
+- More road accidents → Higher trauma blood demand
+- Festivals → Reduced donation camps
+- Trauma hospitals → Higher emergency demand
 
 ---
 
-## 11. Integration Checklist
+## Feature 2 — Data Preprocessing
 
-- [ ] Confirm local FastAPI runs on port `8001`.
-- [ ] Verify ONNX runtime outputs compile on host architectures.
-- [ ] Confirm prediction results format matches Backend specs.
+Implement preprocessing pipeline for
+
+- Missing values
+- Label Encoding
+- One-Hot Encoding
+- Feature Scaling (where required)
+
+Pipeline must be reusable during inference.
+
+---
+
+## Feature 3 — Model Training
+
+Train a Scikit-Learn regression model.
+
+Recommended baseline:
+
+- Random Forest Regressor
+
+Optional comparison:
+
+- XGBoost
+- Gradient Boosting
+- Extra Trees
+
+Target
+
+```
+expected_demand_units
+```
+
+Evaluation Metrics
+
+- R² Score
+- MAE
+- RMSE
+
+Target Accuracy
+
+```
+R² > 0.75
+```
+
+---
+
+## Feature 4 — ONNX Conversion
+
+Convert trained pipeline using
+
+```
+skl2onnx
+```
+
+Requirements
+
+- No custom operators
+- Snapdragon compatible
+- ONNX Runtime compatible
+
+Prediction parity
+
+```
+Difference < 0.01
+```
+
+between
+
+- Scikit-Learn
+- ONNX Runtime
+
+---
+
+## Feature 5 — Prediction API
+
+### Endpoint
+
+```
+POST /api/v1/predict/demand
+```
+
+### Request
+
+```json
+{
+  "hospital_id": 1,
+  "hospital_type": "Trauma",
+  "city_region": "Urban",
+  "blood_type": "O+",
+  "temperature_c": 31.4,
+  "rainfall_mm": 112,
+  "dengue_cases_weekly": 52,
+  "road_accidents": 21,
+  "emergency_cases": 13,
+  "scheduled_surgeries": 9,
+  "holiday": 0,
+  "blood_donation_camp": 1,
+  "current_inventory": 80,
+  "day_of_week": 2,
+  "month": 7
+}
+```
+
+### Response
+
+```json
+{
+  "status": "success",
+  "prediction": {
+    "expected_demand_units": 43,
+    "recommended_inventory": 60,
+    "inventory_health_score": 84,
+    "alert_level": "SAFE"
+  }
+}
+```
+
+---
+
+# 6. Inventory Intelligence
+
+Using predicted demand and current inventory, generate
+
+### Inventory Recommendation
+
+```
+Recommended Inventory =
+Predicted Demand × Safety Factor
+```
+
+### Alert Levels
+
+SAFE
+
+Inventory > 130% demand
+
+WARNING
+
+Inventory between 100–130%
+
+CRITICAL
+
+Inventory below predicted demand
+
+---
+
+# 7. Explainable AI
+
+The prediction service should expose the most influential features contributing to the prediction.
+
+Example
+
+```
+Prediction: 43 Units
+Top Contributors:
+• High dengue cases
+• Trauma hospital
+• Increased emergency admissions
+```
+
+This improves transparency during hackathon demonstrations.
+
+---
+
+# 8. Non-Functional Requirements
+
+Inference latency
+
+```
+< 50 ms
+```
+
+ONNX parity
+
+```
+< 0.01
+```
+
+Memory efficient
+
+Compatible with Snapdragon X Elite
+
+Ready for Qualcomm QAIRT compilation
+
+---
+
+# 9. Deliverables
+
+- Synthetic dataset generator
+- Training pipeline
+- Preprocessing pipeline
+- Model evaluation
+- ONNX model
+- FastAPI prediction server
+- Unit tests
+- Documentation
+
+---
+
+# 10. Development Milestones
+
+### Hours 00–06 (Phase 1: Data & Training)
+- Dataset generation and validation.
+- Pipeline pre-processing and training Random Forest baseline model.
+
+### Hours 06–12 (Phase 2: ONNX Compilation)
+- ONNX model conversion and validation.
+- Parity checking between scikit-learn and ONNX.
+
+### Hours 12–18 (Phase 3: Prediction API)
+- FastAPI prediction server implementation.
+- Explainable AI (top feature contributors) integration.
+
+### Hours 18–24 (Phase 4: Integration & QA)
+- Backend integration verification.
+- Target latency (<50ms) validation and unit testing.
+
+---
+
+# 11. Dependencies
+
+Backend depends on this module.
+
+Output API must strictly follow agreed JSON schema.
+
+Do not modify
+
+- backend/
+- dashboard/
+- hardware/
+- face-recognition/
+
+---
+
+# 12. Acceptance Criteria
+
+✓ Dataset generated successfully
+
+✓ Model R² > 0.75
+
+✓ ONNX conversion successful
+
+✓ ONNX parity verified
+
+✓ Inference latency <50ms
+
+✓ API passes unit tests
+
+✓ Backend integration successful
+
+✓ Snapdragon deployment ready
+
+---
+
+# 13. Integration Checklist
+
+- [ ] FastAPI running on port 8001
+- [ ] ONNX Runtime verified
+- [ ] Prediction endpoint working
+- [ ] Backend integration complete
+- [ ] Dashboard receives predictions
+- [ ] QAIRT compilation tested
