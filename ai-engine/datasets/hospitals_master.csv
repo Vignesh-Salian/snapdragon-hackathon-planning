@@ -1,0 +1,26 @@
+hospital_id,hospital_name,hospital_type,city_region
+1,Belagavi Trauma Center,Trauma,Rural
+2,Chamarajanagar Trauma Center,Trauma,Semi-Urban
+3,Bidar Community Clinic,Clinic,Urban
+4,Yadgir Community Clinic,Clinic,Semi-Urban
+5,Chikkamagaluru General Hospital,General,Urban
+6,Chitradurga General Hospital,General,Urban
+7,Shivamogga Trauma Center,Trauma,Urban
+8,Bagalkot Community Clinic,Clinic,Rural
+9,Koppal General Hospital,General,Urban
+10,Kolar General Hospital,General,Urban
+11,Tumakuru General Hospital,General,Semi-Urban
+12,Davangere General Hospital,General,Urban
+13,Hassan Community Clinic,Clinic,Rural
+14,Mysuru Trauma Center,Trauma,Semi-Urban
+15,Ballari Trauma Center,Trauma,Urban
+16,Bengaluru General Hospital,General,Semi-Urban
+17,Mandya Trauma Center,Trauma,Semi-Urban
+18,Kalaburagi Trauma Center,Trauma,Semi-Urban
+19,Mangaluru Community Clinic,Clinic,Rural
+20,Hubballi General Hospital,General,Urban
+21,Vijayapura General Hospital,General,Urban
+22,Raichur Community Clinic,Clinic,Urban
+23,Haveri General Hospital,General,Semi-Urban
+24,Gadag Trauma Center,Trauma,Rural
+25,Udupi General Hospital,General,Semi-Urban
