@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+numpy>=1.26
+httpx>=0.27
+pytest>=8.0
+# On the phone / Snapdragon target, add the real CV + NPU stack:
+#   mediapipe            # Face Mesh (468 landmarks)
+#   opencv-python        # image decode
+#   ai-edge-litert       # LiteRT runtime; compile the mesh to INT8 via Qualcomm AI Hub for SM8850
