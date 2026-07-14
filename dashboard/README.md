@@ -50,9 +50,13 @@ Shaun is responsible for designing, styling, and coding the React application us
 ## 5. Technical Responsibilities
 
 ### APIs to Consume
-*   `GET http://127.0.0.1:8002/api/v1/inventory/{hospital_id}`
-*   `POST http://127.0.0.1:8002/api/v1/inventory/update`
-*   `WebSocket ws://127.0.0.1:8002/ws/live`
+*   `GET http://127.0.0.1:8002/api/v1/inventory/{hospital_id}` -> Fetches blood levels.
+*   `POST http://127.0.0.1:8002/api/v1/inventory/update` -> Updates inventory items.
+*   `WebSocket ws://127.0.0.1:8002/ws/live` -> Listens for live telemetry and duplicate donor alerts.
+*   **Gateway Proxy Calls (routes to internal modules through Hub):**
+    *   `POST http://127.0.0.1:8002/api/v1/donor/enroll-delegate` -> Sends JSON payload (`{"name": "...", "image_b64": "..."}`) to enroll donors.
+    *   `POST http://127.0.0.1:8002/api/v1/donor/verify-delegate` -> Sends JSON payload (`{"image_b64": "..."}`) to check for duplicate donor profiles.
+    *   `POST http://127.0.0.1:8002/api/v1/predict/demand-delegate` -> Sends hospital metrics JSON payload to predict blood demand.
 
 ### Stream Payloads Handled
 *   `TELEMETRY_UPDATE`: Modifies charts and cold-box card status.

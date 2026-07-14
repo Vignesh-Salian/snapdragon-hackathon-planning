@@ -50,8 +50,8 @@ Vignesh is responsible for integrating MediaPipe Face Mesh, building the Euclide
 ## 5. Technical Responsibilities
 
 ### APIs to Expose
-*   `POST /api/v1/donor/enroll` -> Payload: `name` (form field), `image` (file upload).
-*   `POST /api/v1/donor/verify` -> Payload: `image` (file upload).
+*   `POST /api/v1/donor/enroll` -> Payload: `{"name": "string", "image_b64": "Base64 string of face"}`.
+*   `POST /api/v1/donor/verify` -> Payload: `{"image_b64": "Base64 string of face"}`.
 *   **Response Format (409 Conflict - Duplicate Flagged):**
     ```json
     {

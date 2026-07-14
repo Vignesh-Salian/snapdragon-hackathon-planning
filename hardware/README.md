@@ -59,7 +59,20 @@ The Hardware Team is responsible for wiring the DHT22 and ADXL345 to the Arduino
 
 ### Telemetry Packet Format (MPU to Backend)
 *   **Protocol:** WebSocket or HTTP JSON payload via WiFi.
-*   **Schema:** Matches the master `IMPLEMENTATION_PLAN.md` specification.
+*   **Schema (sent to `POST http://<BACKEND_LAN_IP>:8002/api/v1/telemetry/report` or streamed):**
+    *   *Note: Do not use `127.0.0.1`. The MPU daemon must use a `.env` file to configure the actual local network IP (e.g., `192.168.x.x`) of the backend laptop host.*
+    ```json
+    {
+      "device_id": "string",
+      "uptime_ms": 12345,
+      "telemetry": {
+        "temperature": 4.5,
+        "humidity": 45.2,
+        "shock_g": 0.8
+      },
+      "status": "SAFE" // (SAFE, WARNING, or COMPROMISED)
+    }
+    ```
 
 ### Hardware Details
 *   **Compute Block:** MPU (Cortex-A53 @ 2.0 GHz) + MCU (Cortex-M33 @ 160 MHz).
