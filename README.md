@@ -95,7 +95,7 @@ cd hardware && pytest         # cold-box state logic
 - **[`ai-engine/`](ai-engine/README.md)** (Tejas) — MLP demand forecaster → ONNX → Hexagon NPU (QNN EP), FastAPI prediction API with explainable-AI.
 - **[`face-recognition/`](face-recognition/README.md)** (Vignesh) — MediaPipe Face Mesh, SQLite donor store, 56-day duplicate lockout.
 - **[`dashboard/`](dashboard/README.md)** (Shaun) — React + Recharts live monitoring UI.
-- **[`hardware/`](hardware/README.md)** (Hardware Team) — Arduino UNO Q + Modulino Thermo/Buzzer/Knob cold box (+ simulator).
+- **[`hardware/`](hardware/README.md)** (Hardware Team) — Arduino UNO Q + Modulino Thermo/Buzzer/Knob cold box (+ optional Movement IMU for shock; + simulator).
 
 See **[`plan.md`](plan.md)** for the full assessment, hackathon roadmap, and demo script,
 and **[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)** for the engineering spec.
