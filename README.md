@@ -1,80 +1,101 @@
 # HemaGrid AI
 
-> **Smart, Connected Blood Logistics & Verification**  
-> *A collaborative edge AI intelligence network designed for the Qualcomm Snapdragon Multiverse Hackathon.*
+> **Smart, Connected Blood Logistics & Verification** — an edge-AI network for the
+> Qualcomm Snapdragon Multiverse Hackathon.
+
+HemaGrid AI monitors the blood cold chain, forecasts hospital demand, and blocks
+duplicate donors — running **on-device across three Snapdragon form factors**
+(AI PC + phone + Arduino UNO Q), with no cloud dependency.
 
 ---
 
-## 📋 Overview
+## 👥 Team
 
-HemaGrid AI is a distributed, connected cold chain monitoring and donor verification system designed to optimize the blood donation and supply pipeline. By linking low-power edge microcontrollers, on-device mobile face recognition, and Snapdragon-powered AI PCs, HemaGrid AI ensures that blood reserves are monitored, secured, and distributed efficiently.
+> ⚠️ Teammates: replace the placeholder emails with your real ones — the
+> hackathon requires **names + emails** in the README for prize eligibility.
+
+| Member | Module | Email |
+|---|---|---|
+| **Mithun** | Backend Platform Hub | mithunmallya97@gmail.com |
+| **Shaun** | Frontend Dashboard | `<add-email>` |
+| **Tejas Nayak** | AI Intelligence (demand forecasting) | `<add-email>` |
+| **Vignesh** | Donor Verification (face) | `<add-email>` |
+| Hardware Team | Smart Cold Box (Arduino UNO Q) | `<add-email>` |
+
+**License:** [MIT](./LICENSE) · **Edge execution:** every component runs locally
+on-device; the only network traffic is LAN between the box, the laptop, and the
+dashboard.
 
 ---
 
-## 🏗 System Architecture
+## 🏗 Architecture (multi-device = "multiverse")
 
 ```text
-                  +--------------------------+
-                  |  Smart Cold Box (Arduino)|
-                  +------------┬-------------+
-                               │ Serial JSON (USB)
-                               v
-                  +--------------------------+
-                  |    Core Backend (FastAPI)|
-                  +----┬────────────────┬----+
-                       │                │
-             HTTP POST │                │ HTTP POST
-                       v                v
-          +-----------------+      +-----------------+
-          |Donor Verification|      | AI Intelligence |
-          | - MediaPipe     |      | - ONNX Predictor|
-          +-----------------+      +-----------------+
-                               │
-                               │ WebSocket
-                               v
-                  +--------------------------+
-                  |  Dashboard App (React)   |
-                  +--------------------------+
+  Arduino UNO Q (Modulino)          Snapdragon 8 Elite phone
+  Thermo · Buzzer · Knob            MediaPipe/LiteRT face mesh (NPU)
+        │ HTTP telemetry                     │ HTTP (via gateway)
+        ▼                                     ▼
+  ┌─────────────────────────  Core Backend Hub (FastAPI, :8002)  ─────────────────────────┐
+  │   inventory · telemetry · WebSocket /ws/live · delegate proxies (CORS gateway)          │
+  └───────────────┬───────────────────────────────────────────────┬────────────────────────┘
+        WebSocket │                                                 │ HTTP delegate
+                  ▼                                                 ▼
+        Dashboard (React, browser)                        AI Engine (ONNX/QNN NPU, :8001)
+                                                          demand forecast + XAI
+```
+
+| Device | Runs | Snapdragon target |
+|---|---|---|
+| **AI PC** | Backend hub + AI demand engine (ONNX Runtime + QNN EP) | Snapdragon X Elite (Hexagon, 45 TOPS) |
+| **Phone** | Donor face verification (MediaPipe → LiteRT INT8) | OnePlus 15 · Snapdragon 8 Elite Gen 5 (SM8850) |
+| **IoT** | Smart Cold Box telemetry | Arduino UNO Q · Dragonwing QRB2210 + STM32U585 |
+
+---
+
+## 🚀 Quick start
+
+Each module runs independently. **You do not need the hardware** — a built-in
+cold-box simulator drives the full pipeline.
+
+```bash
+# 1) Backend hub (:8002)
+cd backend && pip install -r requirements.txt && python run.py
+
+# 2) AI engine (:8001) — first build the model, then serve
+cd ai-engine && pip install -r requirements.txt
+python training/train.py && python onnx/convert_to_onnx.py
+python main.py
+
+# 3) Face verification (:8000)
+cd face-recognition && pip install -r requirements.txt && python api/main.py
+
+# 4) Dashboard (:5173)
+cd dashboard && npm install && npm run dev
+
+# 5) Cold box — real hardware:   cd hardware/my_app/python && python main.py
+#    ...or no hardware (demo):    HEMAGRID_SIMULATE=1 BACKEND_URL=http://127.0.0.1:8002 \
+#                                 python hardware/my_app/python/main.py
+```
+
+Then open the dashboard → watch live telemetry, forecasts, and fraud alerts.
+
+### Tests
+```bash
+cd backend && pytest          # 7 passed
+cd ai-engine && pytest        # model + prediction
+cd face-recognition && pytest # enroll / verify / duplicate / no-face
+cd hardware && pytest         # cold-box state logic
 ```
 
 ---
 
-## 📂 Repository Structure & Assignments
+## 📂 Modules
 
-This repository contains the system specification and individual developer README files. Each contributor owns a specific, isolated module to enable parallel development.
+- **[`backend/`](backend/README.md)** (Mithun) — FastAPI hub: SQLite (WAL), inventory, telemetry, `/ws/live`, delegate proxies.
+- **[`ai-engine/`](ai-engine/README.md)** (Tejas) — MLP demand forecaster → ONNX → Hexagon NPU (QNN EP), FastAPI prediction API with explainable-AI.
+- **[`face-recognition/`](face-recognition/README.md)** (Vignesh) — MediaPipe Face Mesh, SQLite donor store, 56-day duplicate lockout.
+- **[`dashboard/`](dashboard/README.md)** (Shaun) — React + Recharts live monitoring UI.
+- **[`hardware/`](hardware/README.md)** (Hardware Team) — Arduino UNO Q + Modulino Thermo/Buzzer/Knob cold box (+ optional Movement IMU for shock; + simulator).
 
-*   **[`IMPLEMENTATION_PLAN.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/IMPLEMENTATION_PLAN.md)** - Master engineering architecture and integration specs.
-*   **[`backend/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/backend/README.md) (Mithun)** - **Backend Platform:** FastAPI backend, SQLite database schemas, REST APIs, WebSockets, and integration interfaces.
-*   **[`dashboard/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/dashboard/README.md) (Shaun)** - **Frontend Dashboard:** React dashboard, live monitoring alerts, inventory visualizations, and demo control UI.
-*   **[`ai-engine/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/ai-engine/README.md) (Tejas)** - **AI Intelligence:** Demand predictions, inventory forecasting models, training scripts, and ONNX compiler pipelines.
-*   **[`face-recognition/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/face-recognition/README.md) (Vignesh)** - **Donor Verification:** Face recognition, MediaPipe landmarks, duplicate checks, and validation REST APIs.
-*   **[`hardware/README.md`](file:///C:/Users/Vignesh/snapdragon-hackathon-planning/hardware/README.md) (Hardware Team)** - **Smart Cold Box:** Arduino UNO Q firmware, temperature/shock sensors, calibration, and USB serial output.
-
----
-
-## 🛠 Tech Stack
-
-| Module | Technologies | Target Environment |
-| :--- | :--- | :--- |
-| **Core Backend** | Python, FastAPI, SQLite, WebSockets | Snapdragon X Elite PC |
-| **Frontend** | React, TypeScript, TailwindCSS, Chart.js | Web Browser |
-| **AI Engine** | Python, Scikit-Learn, ONNX Runtime | Hexagon NPU (via QNN EP) |
-| **Face Recognition** | Python, OpenCV, MediaPipe | CPU / GPU / Mobile NPU |
-| **IoT Node** | Arduino C++, Temp Sensor, Accelerometer | Arduino UNO R4 WiFi / Minima |
-
----
-
-## 🚀 Development Workflow
-
-To ensure integration proceeds smoothly during the hackathon:
-
-1.  **Branching Rule:** Always branch from `main` to a feature branch (e.g. `feature/backend-inventory`).
-2.  **Pull Requests:** Submit PRs back to `main` with detailed descriptions. Code must pass local test sweeps.
-3.  **Namespace Isolation:** Ensure all code and build dependencies are kept within your designated workspace folder. Do not modify files in other folders.
-
----
-
-## 📅 Timeline & Execution
-
-*   **Pre-Event Development:** All contributors work independently in their respective folders, matching the JSON schema contracts specified in the README assignments.
-*   **Hackathon Assembly:** The team will converge to flash the microcontrollers, compile target ONNX models to NPU binaries using the QAIRT SDK, and execute end-to-end integration testing on Snapdragon hardware.
+See **[`plan.md`](plan.md)** for the full assessment, hackathon roadmap, and demo script,
+and **[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)** for the engineering spec.
