@@ -1,0 +1,8 @@
+# Arduino App Lab layout for the Smart Cold Box.
+# The MPU Python daemon reads the Modulinos over I2C and posts telemetry to the
+# backend, so the MCU sketch stays minimal. Track: Real-Time Hardware & Sensing.
+name: smart-cold-box
+python:
+  entry: python/main.py
+sketch:
+  path: sketch/sketch.ino

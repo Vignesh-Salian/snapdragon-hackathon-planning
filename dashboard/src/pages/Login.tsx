@@ -1,4 +1,3 @@
-import React from "react";
 import { Droplet, Building2, Fingerprint, LogIn } from "lucide-react";
 import { ACCENT } from "../types";
 import Glass from "../components/Glass";

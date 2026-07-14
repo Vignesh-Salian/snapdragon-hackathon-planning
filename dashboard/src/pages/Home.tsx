@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Droplet, Thermometer, Fingerprint, HeartPulse, Plus, Battery } from "lucide-react";
 import { STATE, ACCENT } from "../types";

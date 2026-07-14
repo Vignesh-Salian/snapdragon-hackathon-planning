@@ -1,0 +1,4 @@
+# MPU (QRB2210 / Debian) deps.
+# The simulator (HEMAGRID_SIMULATE=1) needs NOTHING beyond the standard library.
+# On real hardware, App Lab provides the Modulino library; if not, install it:
+modulino

@@ -1,4 +1,3 @@
-import React from "react";
 import { useOutletContext } from "react-router-dom";
 import { Server, CheckCircle2, XCircle, Clock, Building2, Activity } from "lucide-react";
 import { STATE, ACCENT } from "../types";

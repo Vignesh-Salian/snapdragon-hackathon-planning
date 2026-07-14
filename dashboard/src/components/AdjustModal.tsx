@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
 import { ACCENT } from "../types";
 import Glass from "./Glass";
