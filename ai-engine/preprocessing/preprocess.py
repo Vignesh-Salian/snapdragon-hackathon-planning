@@ -4,10 +4,10 @@ from typing import List, Tuple
 
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 # --------------------------------------------------------------------------
 # Logging
@@ -138,9 +138,11 @@ def build_preprocessor() -> ColumnTransformer:
     Returns:
         An unfitted ColumnTransformer.
     """
+    # Numerics are scaled (not passed through) because the MLP is sensitive to
+    # input magnitude; StandardScaler converts cleanly to ONNX.
     return ColumnTransformer(
         transformers=[
-            ("num", "passthrough", NUMERICAL_FEATURES),
+            ("num", StandardScaler(), NUMERICAL_FEATURES),
             (
                 "cat",
                 OneHotEncoder(handle_unknown="ignore", sparse_output=False),
@@ -152,11 +154,12 @@ def build_preprocessor() -> ColumnTransformer:
 
 
 def _build_pipeline() -> Pipeline:
-    """Build the full reusable pipeline: preprocessing -> placeholder estimator.
+    """Build the full reusable pipeline: preprocessing -> MLP estimator.
 
-    Internal helper used by load_and_preprocess_data(). The estimator is a
-    default RandomForestRegressor placeholder only - no training/tuning logic
-    lives in this module (see training/train.py).
+    Internal helper used by load_and_preprocess_data(). An MLPRegressor (not a
+    tree ensemble) is used so the exported ONNX graph runs on the Hexagon NPU
+    via the QNN Execution Provider — TreeEnsembleRegressor falls back to CPU.
+    Training/tuning lives in training/train.py.
 
     Returns:
         An unfitted sklearn Pipeline.
@@ -164,7 +167,16 @@ def _build_pipeline() -> Pipeline:
     return Pipeline(
         steps=[
             ("preprocessor", build_preprocessor()),
-            ("model", RandomForestRegressor(random_state=42)),
+            (
+                "model",
+                MLPRegressor(
+                    hidden_layer_sizes=(64, 32),
+                    activation="relu",
+                    max_iter=500,
+                    early_stopping=True,
+                    random_state=42,
+                ),
+            ),
         ]
     )
 

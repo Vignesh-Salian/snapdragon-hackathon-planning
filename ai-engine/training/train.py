@@ -29,7 +29,7 @@ from typing import Dict, Tuple
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.pipeline import Pipeline
@@ -61,17 +61,16 @@ PIPELINE_PATH = MODELS_DIR / "pipeline.pkl"
 FEATURE_IMPORTANCE_PATH = MODELS_DIR / "feature_importance.csv"
 
 # Prefixed "model__" per sklearn Pipeline convention, since the estimator
-# lives at pipeline.named_steps["model"].
+# lives at pipeline.named_steps["model"] (an MLPRegressor — see preprocess.py).
 PARAM_DISTRIBUTIONS = {
-    "model__n_estimators": [100, 200, 300],
-    "model__max_depth": [10, 15, 20, None],
-    "model__min_samples_split": [2, 5, 10],
-    "model__min_samples_leaf": [1, 2, 4],
+    "model__hidden_layer_sizes": [(64, 32), (128, 64), (64,), (128, 64, 32)],
+    "model__alpha": [1e-4, 1e-3, 1e-2],
+    "model__learning_rate_init": [1e-3, 5e-3],
 }
 
 SEARCH_CONFIG = dict(
-    cv=5,
-    n_iter=15,
+    cv=3,
+    n_iter=6,
     random_state=42,
     n_jobs=-1,
     scoring="r2",
@@ -218,38 +217,35 @@ def save_pipeline(fitted_pipeline: Pipeline, path: Path = PIPELINE_PATH) -> None
 
 
 def save_feature_importance(
-    fitted_pipeline: Pipeline, path: Path = FEATURE_IMPORTANCE_PATH
+    fitted_pipeline: Pipeline,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+    path: Path = FEATURE_IMPORTANCE_PATH,
 ) -> pd.DataFrame:
-    """Extract and save feature importances using the encoded feature names
-    produced by the ColumnTransformer (importances are computed post-encoding,
-    so raw input column names would be misleading here).
+    """Compute and save permutation feature importances over the raw input
+    columns. MLPRegressor has no `feature_importances_`, and raw-column names
+    (e.g. "dengue_cases_weekly") are what the Explainable-AI panel wants to
+    show — so permutation importance on the whole pipeline is the right tool.
 
     Args:
-        fitted_pipeline: A fitted sklearn Pipeline with named steps
-            "preprocessor" and "model".
+        fitted_pipeline: A fitted sklearn Pipeline (preprocessing + MLP).
+        X_test: Raw (unencoded) test features — the 15 model inputs.
+        y_test: Test targets.
         path: Destination CSV path.
 
     Returns:
         DataFrame with columns [feature_name, importance], sorted descending.
 
     Raises:
-        ValueError: If feature names and importances have mismatched lengths.
         OSError: If the file cannot be written.
     """
-    preprocessor = fitted_pipeline.named_steps["preprocessor"]
-    model: RandomForestRegressor = fitted_pipeline.named_steps["model"]
-
-    feature_names = preprocessor.get_feature_names_out()
-    importances = model.feature_importances_
-
-    if len(feature_names) != len(importances):
-        raise ValueError(
-            f"Feature name count ({len(feature_names)}) does not match "
-            f"importance count ({len(importances)}); pipeline may be stale."
-        )
-
+    result = permutation_importance(
+        fitted_pipeline, X_test, y_test, n_repeats=5, random_state=42, n_jobs=-1
+    )
     importance_df = (
-        pd.DataFrame({"feature_name": feature_names, "importance": importances})
+        pd.DataFrame(
+            {"feature_name": list(X_test.columns), "importance": result.importances_mean}
+        )
         .sort_values("importance", ascending=False)
         .reset_index(drop=True)
     )
@@ -295,7 +291,7 @@ def main() -> None:
 
     try:
         save_pipeline(best_pipeline)
-        importance_df = save_feature_importance(best_pipeline)
+        importance_df = save_feature_importance(best_pipeline, X_test, y_test)
     except (OSError, ValueError) as exc:
         logger.error("Failed to save artifacts: %s", exc)
         sys.exit(1)
