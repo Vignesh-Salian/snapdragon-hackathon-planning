@@ -1,4 +1,3 @@
-import React from "react";
 import { Droplet, Building2, ChevronDown, Wifi, WifiOff, Bell, AlertTriangle } from "lucide-react";
 import { ACCENT } from "../types";
 import PulseTrace from "./PulseTrace";

@@ -1,4 +1,3 @@
-import React from "react";
 import { ACCENT } from "../types";
 
 export interface PulseTraceProps {

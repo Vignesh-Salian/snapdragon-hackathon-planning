@@ -80,9 +80,22 @@ export function useWebSocket({
       ws.onmessage = (event) => {
         try {
           const parsed = JSON.parse(event.data);
-          if (parsed && (parsed.type === "TELEMETRY_UPDATE" || parsed.type === "FRAUD_ALERT")) {
+          // Backend broadcasts the canonical telemetry frame
+          // ({type:"telemetry", telemetry:{temperature,...}, status}); adapt it
+          // to the UI's TELEMETRY_UPDATE envelope. (No batt/accel in the Modulino
+          // kit — battery shown as full, shock as 0.)
+          if (parsed?.type === "telemetry" && parsed.telemetry) {
+            const payload: WSTelemetryPayload = {
+              device_id: parsed.device_id,
+              temp: parsed.telemetry.temperature,
+              batt: 100,
+              accel: parsed.telemetry.shock_g ?? 0,
+            };
+            setLastMessage({ type: "TELEMETRY_UPDATE", payload });
+          } else if (parsed?.type === "TELEMETRY_UPDATE" || parsed?.type === "FRAUD_ALERT") {
             setLastMessage(parsed as WSMessage);
           }
+          // parsed.type === "inventory" is ignored here; inventory is fetched over REST.
         } catch (err) {
           console.error("Error parsing WebSocket message data:", err);
         }

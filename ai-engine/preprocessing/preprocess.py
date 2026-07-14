@@ -217,7 +217,7 @@ def load_and_preprocess_data(
     logger.info("Split dataset: X_train=%s X_test=%s", X_train.shape, X_test.shape)
 
     pipeline = _build_pipeline()
-    logger.info("Built unfitted pipeline (preprocessing + placeholder RandomForestRegressor).")
+    logger.info("Built unfitted pipeline (preprocessing + MLPRegressor).")
 
     return X_train, X_test, y_train, y_test, pipeline
 

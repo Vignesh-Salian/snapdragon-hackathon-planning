@@ -1,0 +1,2 @@
+# MCU compile config for the UNO Q (STM32U585 core).
+fqbn: arduino:stm32u585:unoq

@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from "recharts";
-import { Thermometer, Battery, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { STATE, ACCENT, predictTimeToBreach } from "../types";
 import { coldBoxes, telemetryData } from "../mocks/data";
 import Glass from "../components/Glass";

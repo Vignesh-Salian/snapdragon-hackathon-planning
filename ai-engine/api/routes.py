@@ -34,4 +34,7 @@ def predict_demand(req: DemandRequest):
         prediction = get_predictor().predict(req.model_dump())
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
-    return {"status": "success", "prediction": prediction}
+    # Lift XAI contributors to the top level to match the dashboard's
+    # PredictionResponse shape ({status, prediction, top_contributors}).
+    contributors = prediction.pop("top_contributors", [])
+    return {"status": "success", "prediction": prediction, "top_contributors": contributors}
