@@ -19,7 +19,7 @@ duplicate donors — running **on-device across three Snapdragon form factors**
 | **Mithun** | Backend Platform Hub | mithunmallya97@gmail.com |
 | **Shaun** | Frontend Dashboard | `<add-email>` |
 | **Tejas Nayak** | AI Intelligence (demand forecasting) | `<add-email>` |
-| **Vignesh** | Donor Verification (face) | `<add-email>` |
+| **Vignesh** | Donor Verification (face) | vigneshsalian55@gmail.com |
 | Hardware Team | Smart Cold Box (Arduino UNO Q) | `<add-email>` |
 
 **License:** [MIT](./LICENSE) · **Edge execution:** every component runs locally
