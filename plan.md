@@ -89,15 +89,18 @@ done — that's the whole strategy.*
 
 ## 5. Hardware — provided kit ONLY
 
-**Use exactly:** Arduino **UNO Q (4GB)** · **Modulino Thermo** (temp/humidity) ·
+**Base kit:** Arduino **UNO Q (4GB)** · **Modulino Thermo** (temp/humidity) ·
 **Modulino Buzzer** (alarm) · **Modulino Knob** (threshold). All QWIIC/I²C —
-daisy-chained, no breadboard, no soldering.
+daisy-chained, no breadboard, no soldering. (DHT22 + ADXL345 plan dropped.)
 
-- ⚠️ **No accelerometer in the kit** → `shock_g` is reported `null`; safety state
-  is driven by **temperature** (the real cold-chain metric). The original DHT22 +
-  ADXL345 plan is dropped.
-- Cold-chain states: SAFE ≤ 6 °C · WARNING ≤ 8 °C · COMPROMISED > 8 °C (buzzer sounds).
-  The **Knob** shifts the threshold live for calibration.
+**Recommended add-on — Modulino Movement (6-axis IMU, ~$15):** blood is damaged
+by mechanical **shock** as well as heat, so the box should watch both hazards.
+It's QWIIC → clips into the same chain, no rewiring. `shock_g` is **optional** in
+code: fitted → a hard knock trips COMPROMISED and the buzzer sounds; not fitted →
+`shock_g` is `null` and safety runs on temperature alone (graceful).
+
+- Thermal states: SAFE ≤ 6 °C · WARNING ≤ 8 °C · COMPROMISED > 8 °C. Impact:
+  COMPROMISED when shock ≥ 2 g. The **Knob** shifts the temp threshold live.
 - USB-C **Power Delivery required** or the board won't boot.
 
 ---
@@ -111,9 +114,10 @@ Zero external services needed. Everything else layers on top and degrades cleanl
 1. Dashboard shows **"Connection Lost"** (stale banner already built).
 2. Power on the cold box → audience watches it go **LIVE** in real time. *(power move)*
 3. Open the box / warm the Thermo → temp climbs → **WARNING → COMPROMISED**, **buzzer sounds**, dashboard turns red.
-4. Run a **demand forecast** → dashboard shows predicted units + **explainable-AI** top contributors (running on the **NPU**).
-5. Scan the same donor twice → **duplicate donor 409** → fraud modal.
-6. Close with `get_ep_devices()` on screen proving inference ran on the **Hexagon NPU**, not CPU.
+4. **Knock the box** (Modulino Movement) → shock spike → COMPROMISED again — a *second, independent* hazard (mechanical, not thermal). Shows the box protects blood on two axes.
+5. Run a **demand forecast** → dashboard shows predicted units + **explainable-AI** top contributors (running on the **NPU**).
+6. Scan the same donor twice → **duplicate donor 409** → fraud modal.
+7. Close with `get_ep_devices()` on screen proving inference ran on the **Hexagon NPU**, not CPU.
 
 ---
 
