@@ -59,7 +59,14 @@ We can change anything, so here is the unflinching version.
 
 **The plan, in priority order:**
 
-1. **Make the phone's face verification the headline NPU workload.** Replace Face Mesh landmarks with a real **face-embedding model (MobileFaceNet, ~3.9 MB, 128-dim identity vectors)**, quantized **INT8** via Qualcomm AI Hub and run on the **Hexagon NPU (SM8850)**. This single change: (a) fixes the correctness bug, (b) creates a genuine vision NPU load for the 40%, and (c) is *central* to the story (donor dedup is a core feature). **Highest-ROI move in the project.**
+1. **Make face verification the headline NPU workload.** Replace Face Mesh landmarks with a real **face-embedding model (MobileFaceNet, ~3.9 MB, 128-dim identity vectors)**, INT8-quantized via Qualcomm AI Hub. This single change: (a) fixes the correctness bug, (b) creates a genuine vision NPU load for the 40%, and (c) is *central* to the story. **Highest-ROI move in the project.**
+
+   ⚠️ **Decision you must make now (biggest scope fork in the plan) — WHERE does the model run?** Our `verification` service is Python/FastAPI and runs on the *PC*; "on the phone NPU" is a different, bigger piece of work:
+   | Option | Effort | Orchestration prize | NPU for 40% |
+   |---|---|---|---|
+   | **A. PC hosts it** — MobileFaceNet ONNX on the X Elite Hexagon (QNN), keep the FastAPI service | **Low** (~2–4 h convert + wire) | ❌ phone drops out of the "multiverse" | ✅ still a real vision NPU load |
+   | **B. Phone hosts it** — a **Kotlin/Android app** (ORT-Android / LiteRT) that runs the INT8 model and calls the gateway | **High** (a real app to build) | ✅ earns the phone in the orchestration story | ✅ true phone NPU |
+   You **cannot** get "easy" *and* "phone in the demo." Pick before the event: if the orchestration prize is the goal, budget for **B**; if time is tight, ship **A** and still get the 40% credit. Also note: swapping in the real model means **recalibrating the duplicate-distance threshold** on a few real face pairs — the current `0.15` is tuned to the placeholder embedding only.
 2. **Lean hard into orchestration.** The gateway on the AI PC is the conductor: it ingests the UNO Q's telemetry, brokers the phone's verification, serves the forecast, and streams everything to the dashboard live. Frame the demo as *one nervous system across three devices* — that's the separate orchestration prize and reinforces the 40%.
 3. **Keep the demand MLP as a supporting analytic, not the NPU headline.** It's done, it's useful, it shows explainable-AI — but we stop pretending it's the NPU showcase. (We can still run it through QNN to say "even our tabular model is on-device.")
 4. **Bulletproof the core path** for the 20%: `cold box (or simulator) → gateway → dashboard live`. Zero external services. Everything else degrades cleanly (delegates return 503, dashboard falls back to mock, simulator replaces hardware).
@@ -175,7 +182,7 @@ We can change anything, so here is the unflinching version.
 | Model | Role | Data needed | Train or convert? | Time |
 |---|---|---|---|---|
 | **Demand MLP** | forecast (support) | **synthetic** `blood_demand.csv` (8k rows), schema-correct; *calibrate* distributions to real public data (see below) | **Train** (sklearn MLPRegressor) → skl2onnx → QNN INT8 | Train ~**minutes** (done, R²≈0.94). QNN quantize ~**1–2 h** |
-| **Face embedding** | headline NPU | **none to train** — pretrained **MobileFaceNet** weights; plus ~a dozen **sample faces** (e.g. an LFW subset) *for the demo enrollment only* | **Convert** pretrained ONNX → AI Hub INT8 for SM8850 | ~**2–4 h** (compile + on-device wiring). *No training.* |
+| **Face embedding** | headline NPU | **none to train** — pretrained **MobileFaceNet** weights; plus ~a dozen **sample faces** (e.g. an LFW subset) *for the demo enrollment only* | **Convert** pretrained ONNX → AI Hub INT8 | **A (PC host):** ~2–4 h convert+wire · **B (phone Android app):** +a real app. *No training either way.* See the §2 fork. |
 | **Gemma copilot** *(stretch)* | NL triage | none — pretrained `gemma-3-1b` `.litertlm` (Hugging Face LiteRT community) | **Download** prequantized → run on LiteRT-LM | ~**2–3 h** integration. *No training.* |
 
 **Datasets — what we actually need:**

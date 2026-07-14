@@ -22,7 +22,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from database import db  # noqa: E402
 from models.detector import NoFaceError, distance, extract_landmarks  # noqa: E402
 
-DUPLICATE_THRESHOLD = 0.15  # Euclidean distance below this = same donor
+# Euclidean distance below this = same donor.
+# NOTE: 0.15 is calibrated for the deterministic FALLBACK embedding (identical→0,
+# different→~1.41). When you swap in the real MobileFaceNet model, its embedding
+# distances live on a different scale — RECALIBRATE this on a few real face pairs
+# (same-person vs different-person) or dedup will break (all/none match).
+DUPLICATE_THRESHOLD = 0.15
 
 
 @asynccontextmanager

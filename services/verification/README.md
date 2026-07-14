@@ -1,118 +1,31 @@
-# Module Owner Assignment: Donor Verification
+# Verification — Donor De-duplication
 
-*   **Module Owner:** Vignesh
-*   **Module Name:** Biometric Donor Validation Engine
+Donor face verification service (port **8000**). Prevents unsafe over-frequent
+donations by flagging a returning donor inside the clinical **56-day lockout**.
 
----
+## How it works
+- Extract a face **embedding**, compare (Euclidean) against donors enrolled in the
+  last 56 days; a match below the threshold ⇒ duplicate (**HTTP 409**).
+- **Today:** a dependency-light deterministic fallback embedding so the service
+  runs and tests pass anywhere.
+- **Target (headline NPU workload):** a real **MobileFaceNet** identity model,
+  INT8-quantized via Qualcomm AI Hub, running on the **phone's Hexagon NPU**
+  (SM8850). Face-mesh landmarks are *not* identity — this fixes that.
+  ⚠️ When you swap in MobileFaceNet, **recalibrate `DUPLICATE_THRESHOLD`** — real
+  embedding distances are on a different scale than the fallback's.
 
-## 1. Module Overview
+## Endpoints
+```
+POST /api/v1/donor/enroll   {name, image_b64}
+POST /api/v1/donor/verify   {image_b64}
+ → 200 {duplicate_detected:false}  |  409 {duplicate_detected:true, confidence, matched_donor, message}
+ → 400 if no face found
+```
 
-*   **Purpose:** Develop a local computer vision pipeline to extract face landmarks, cache donor profiles, detect duplicate donor registrations, and expose the logic via a REST API to prevent donor fraud.
-*   **Scope:** MediaPipe Face Mesh integration, local SQLite profile storage, duplicate check logic, and API endpoints.
-*   **Success Criteria:** Zero false negatives on identical faces, comparison request latency under 300ms, and clean error handling for non-face images.
-
----
-
-## 2. Responsibilities
-
-Vignesh is responsible for integrating MediaPipe Face Mesh, building the Euclidean distance comparison algorithm, setting up the local SQLite donor profile database, and writing the FastAPI service endpoint wrapper.
-
----
-
-## 3. Repository Ownership
-
-*   **Folder Scope:** `/face-recognition`
-*   **Files Owned:**
-    *   `face-recognition/api/main.py`
-    *   `face-recognition/database/db.py`
-    *   `face-recognition/models/detector.py`
-    *   `face-recognition/tests/test_api.py`
-    *   `face-recognition/docs/standards_and_roadmap.md`
-
----
-
-## 4. Functional Requirements
-
-### Feature 1: Face Landmark Extractor
-*   *Task:* Decode input image bytes and process them using MediaPipe Face Mesh.
-*   *Task:* Extract standard 468 landmark coordinates (flat array of 1404 floats).
-
-### Feature 2: Local SQLite profile storage
-*   *Task:* Define DB schemas to store names, enrollment times, and landmarks.
-*   *Task:* Retrieve recent enrollments within the clinical 56-day lockout window.
-
-### Feature 3: Similarity Matching
-*   *Task:* Implement Euclidean distance calculations to compare input face meshes.
-*   *Task:* Flag duplicate donor matches if the distance drops below the 0.15 threshold.
-
----
-
-## 5. Technical Responsibilities
-
-### APIs to Expose
-*   `POST /api/v1/donor/enroll` -> Payload: `{"name": "string", "image_b64": "Base64 string of face"}`.
-*   `POST /api/v1/donor/verify` -> Payload: `{"image_b64": "Base64 string of face"}`.
-*   **Response Format (409 Conflict - Duplicate Flagged):**
-    ```json
-    {
-      "duplicate_detected": true,
-      "confidence": "float",
-      "matched_donor": {
-        "id": "integer",
-        "name": "string",
-        "enrolled_at": "string"
-      },
-      "message": "string"
-    }
-    ```
-
----
-
-## 6. Non-Functional Requirements
-
-*   **Performance:** Verification requests must complete in `<300ms` for 1,000 donor records.
-*   **NPU Acceleration:** Implement the face mesh landmark extraction model using **LiteRT** (`.tflite` model) or **ExecuTorch** (`.pte` model), compiled to **INT8** using Qualcomm AI Hub for target SM8850 (Snapdragon 8 Elite NPU v81).
-*   **NPU Library setup:** Bundle necessary QNN libraries (`libLiteRtDispatch_Qualcomm.so`, `libQnnHtp.so`, etc.) inside the runtime folder for NPU acceleration.
-*   **Reliability:** Return `400 Bad Request` if no face is found in the photo.
-*   **Scalability:** SQLite indexing on `enrolled_at` column to speed up lookup requests.
-
----
-
-## 7. Deliverables
-
-*   FastAPI application.
-*   MediaPipe Face Mesh extractor.
-*   Local database schemas.
-*   Unit tests mocking face mesh arrays.
-
----
-
-## 8. Development Milestones
-
-*   **Hours 00–06 (Phase 1: Model & Detection):** Initialize MediaPipe Face Mesh and build standard landmark extraction helpers.
-*   **Hours 06–12 (Phase 2: Database Schema):** Setup SQLite donor enrollment schemas and write 56-day query lookup logic.
-*   **Hours 12–18 (Phase 3: Verification Logic):** Expose `/enroll` and `/verify` endpoints, calculate similarity Euclidean distance, and return duplicates.
-*   **Hours 18–24 (Phase 4: Unit Testing & Optimization):** Create mock face arrays unit tests and verify face mesh search completes under 300ms.
-
----
-
-## 9. Dependencies & Module Boundaries
-
-*   **What Depends On You:** Mithun (Core Backend proxies validation requests to your API).
-*   **Module Boundaries:** Do not modify code files inside `/backend`, `/dashboard`, `/ai-engine`, or `/hardware`.
-
----
-
-## 10. Acceptance Criteria
-
-*   Image uploads without faces are rejected with HTTP 400.
-*   Identical faces trigger duplicate donor matches (HTTP 409).
-*   Tests pass with 100% success rate.
-
----
-
-## 11. Integration Checklist
-
-- [ ] Confirm local FastAPI runs on port `8000`.
-- [ ] Confirm database creates `donors.db` file correctly.
-- [ ] Verify image post-request payload formats match backend specifications.
+## Run / test
+```bash
+pip install -r requirements.txt
+python api/main.py     # :8000
+pytest                 # enroll / duplicate-409 / verify / no-face-400
+```
+See [`../../project.md`](../../project.md) §2 & §7 for the NPU strategy.
