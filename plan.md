@@ -130,7 +130,7 @@ Zero external services needed. Everything else layers on top and degrades cleanl
 | Cross-machine LAN/CORS | 🟡 | Single backend gateway (built) → localhost demo |
 | Face latency / mediapipe on phone | 🟡 | LiteRT INT8 → laptop CPU face service (built) |
 | A live service crashes mid-demo | 🟡 | Delegates 503 + dashboard mock fallback (built) → stick to §6 core |
-| Model accuracy weak | 🟢 | MLP MAE ~2 units; calibrate synthetic data to real distributions (`ai-engine/datasets/REAL_DATA_SOURCES.md`) |
+| Model accuracy weak | 🟢 | MLP MAE ~2 units; calibrate synthetic data to real distributions (`services/forecast/datasets/REAL_DATA_SOURCES.md`) |
 
 ---
 

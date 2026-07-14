@@ -58,44 +58,50 @@ Each module runs independently. **You do not need the hardware** — a built-in
 cold-box simulator drives the full pipeline.
 
 ```bash
-# 1) Backend hub (:8002)
-cd backend && pip install -r requirements.txt && python run.py
+# 1) Gateway hub (:8002)
+cd services/gateway && pip install -r requirements.txt && python run.py
 
-# 2) AI engine (:8001) — first build the model, then serve
-cd ai-engine && pip install -r requirements.txt
+# 2) Forecast engine (:8001) — first build the model, then serve
+cd services/forecast && pip install -r requirements.txt
 python training/train.py && python onnx/convert_to_onnx.py
 python main.py
 
-# 3) Face verification (:8000)
-cd face-recognition && pip install -r requirements.txt && python api/main.py
+# 3) Donor verification (:8000)
+cd services/verification && pip install -r requirements.txt && python api/main.py
 
 # 4) Dashboard (:5173)
-cd dashboard && npm install && npm run dev
+cd apps/dashboard && npm install && npm run dev
 
-# 5) Cold box — real hardware:   cd hardware/my_app/python && python main.py
+# 5) Cold box — real hardware:   cd edge/cold-box/my_app/python && python main.py
 #    ...or no hardware (demo):    HEMAGRID_SIMULATE=1 BACKEND_URL=http://127.0.0.1:8002 \
-#                                 python hardware/my_app/python/main.py
+#                                 python edge/cold-box/my_app/python/main.py
 ```
 
 Then open the dashboard → watch live telemetry, forecasts, and fraud alerts.
 
 ### Tests
 ```bash
-cd backend && pytest          # 7 passed
-cd ai-engine && pytest        # model + prediction
-cd face-recognition && pytest # enroll / verify / duplicate / no-face
-cd hardware && pytest         # cold-box state logic
+cd services/gateway && pytest       # 8 passed
+cd services/forecast && pytest      # model + prediction
+cd services/verification && pytest  # enroll / verify / duplicate / no-face
+cd edge/cold-box && pytest          # cold-box state logic
 ```
 
 ---
 
-## 📂 Modules
+## 📂 Structure
 
-- **[`backend/`](backend/README.md)** (Mithun) — FastAPI hub: SQLite (WAL), inventory, telemetry, `/ws/live`, delegate proxies.
-- **[`ai-engine/`](ai-engine/README.md)** (Tejas) — MLP demand forecaster → ONNX → Hexagon NPU (QNN EP), FastAPI prediction API with explainable-AI.
-- **[`face-recognition/`](face-recognition/README.md)** (Vignesh) — MediaPipe Face Mesh, SQLite donor store, 56-day duplicate lockout.
-- **[`dashboard/`](dashboard/README.md)** (Shaun) — React + Recharts live monitoring UI.
-- **[`hardware/`](hardware/README.md)** (Hardware Team) — Arduino UNO Q + Modulino Thermo/Buzzer/Knob cold box (+ optional Movement IMU for shock; + simulator).
+```text
+services/   backend microservices
+  gateway/        FastAPI hub (:8002) — inventory, telemetry, /ws/live, delegate proxies
+  forecast/       demand forecaster → ONNX → Hexagon NPU (QNN EP) + explainable-AI (:8001)
+  verification/   donor face verification, SQLite donor store, 56-day lockout (:8000)
+apps/
+  dashboard/      React + Recharts live monitoring UI (:5173)
+edge/
+  cold-box/       Arduino UNO Q + Modulino Thermo/Buzzer/Knob (+ optional Movement IMU) + simulator
+```
 
-See **[`plan.md`](plan.md)** for the full assessment, hackathon roadmap, and demo script,
-and **[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)** for the engineering spec.
+See **[`project.md`](project.md)** for the full architecture, system design, tech stack,
+datasets, model-training/conversion, social impact, and winning strategy — and
+**[`plan.md`](plan.md)** for the hour-by-hour hackathon execution roadmap + demo script.
