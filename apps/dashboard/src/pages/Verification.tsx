@@ -25,6 +25,7 @@ export default function Verification({ openAlert }: VerificationPageProps) {
   const [fileName, setFileName] = useState("");
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveResult, setLiveResult] = useState<DonorVerifyResponse | null>(null);
+  const [liveError, setLiveError] = useState<string | null>(null);
   const [enrollStatus, setEnrollStatus] = useState<string | null>(null);
 
   // Webcam integration states
@@ -42,6 +43,7 @@ export default function Verification({ openAlert }: VerificationPageProps) {
 
   const startWebcam = async () => {
     setLiveResult(null);
+    setLiveError(null);
     setEnrollStatus(null);
     setB64Image("");
     setFileName("");
@@ -95,6 +97,7 @@ export default function Verification({ openAlert }: VerificationPageProps) {
     if (!file) return;
     setFileName(file.name);
     setLiveResult(null);
+    setLiveError(null);
     setEnrollStatus(null);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -108,17 +111,13 @@ export default function Verification({ openAlert }: VerificationPageProps) {
     if (!b64Image) return;
     setLiveLoading(true);
     setLiveResult(null);
+    setLiveError(null);
     try {
       const res = await verifyDonor(b64Image);
       setLiveResult(res);
     } catch (err: any) {
       console.error(err);
-      setLiveResult({
-        duplicate_detected: false,
-        confidence: 0,
-        matched_donor: { id: 0, name: "", enrolled_at: "" },
-        message: `API Error: ${err.message || "Failed to reach gateway"}`
-      });
+      setLiveError(err.message || "Failed to complete face verification.");
     } finally {
       setLiveLoading(false);
     }
@@ -233,8 +232,17 @@ export default function Verification({ openAlert }: VerificationPageProps) {
           
           <div className="bg-[#06080c] border border-[rgba(255,255,255,0.08)] rounded-xl p-4 flex flex-col justify-center min-h-[120px]">
             {liveLoading && <span className="text-xs animate-pulse" style={{ color: '#8A97A6' }}>Analyzing face landmarks and identity embeddings...</span>}
-            {!liveLoading && !liveResult && !enrollStatus && <span className="text-xs text-[#5B6572] font-mono">Select a file and click "Run Verification" or type a name to "Enroll".</span>}
+            {!liveLoading && !liveResult && !liveError && !enrollStatus && <span className="text-xs text-[#5B6572] font-mono">Select a file and click "Run Verification" or type a name to "Enroll".</span>}
             {enrollStatus && <span className="text-xs text-[#57ffc9] font-mono">{enrollStatus}</span>}
+            {liveError && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <XCircle size={16} style={{ color: STATE.breach.dot }} />
+                  <span className="text-xs font-semibold" style={{ color: STATE.breach.text }}>DETECTION FAILED</span>
+                </div>
+                <p className="text-xs text-white leading-normal">{liveError}</p>
+              </div>
+            )}
             {liveResult && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
