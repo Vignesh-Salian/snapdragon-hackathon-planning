@@ -8,3 +8,5 @@ pytest>=8.0
 #   mediapipe            # Face Mesh (468 landmarks)
 #   opencv-python        # image decode
 #   ai-edge-litert       # LiteRT runtime; compile the mesh to INT8 via Qualcomm AI Hub for SM8850
+opencv-python-headless
+onnxruntime

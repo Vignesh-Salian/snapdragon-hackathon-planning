@@ -27,7 +27,7 @@ from models.detector import NoFaceError, distance, extract_landmarks  # noqa: E4
 # different→~1.41). When you swap in the real MobileFaceNet model, its embedding
 # distances live on a different scale — RECALIBRATE this on a few real face pairs
 # (same-person vs different-person) or dedup will break (all/none match).
-DUPLICATE_THRESHOLD = 0.15
+DUPLICATE_THRESHOLD = 0.80
 
 
 @asynccontextmanager
