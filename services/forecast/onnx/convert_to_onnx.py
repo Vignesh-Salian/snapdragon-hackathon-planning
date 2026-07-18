@@ -1,23 +1,18 @@
 """
 HemaGrid AI - ONNX Conversion
-Owner: Tejas
 
-Converts the trained sklearn Pipeline (ColumnTransformer + OneHotEncoder +
-RandomForestRegressor) into a single ONNX graph, so the exact same
-preprocessing + inference logic can run on ONNX Runtime - and ultimately
-on Qualcomm QAIRT / the Snapdragon Hexagon NPU - without reimplementing
-the encoding step separately at inference time.
+Converts the trained MLPRegressor into an ONNX graph
+for Qualcomm QAIRT / Snapdragon NPU deployment.
 
-Clean-architecture separation, matching preprocessing/preprocess.py and
-training/train.py:
+Preprocessing is handled separately before inference.
+The ONNX model receives only numeric FLOAT32 tensors.
 
-  - load_pipeline()      -> loads the fitted pipeline from disk
-  - build_onnx_schema()  -> derives the ONNX input schema from
-                             preprocessing.preprocess's own feature lists
-                             (never hardcoded - adding/removing a feature
-                             in preprocess.py automatically flows through)
-  - convert_pipeline()   -> runs the skl2onnx conversion
-  - save_onnx_model()    -> writes the .onnx file to disk
+Functions:
+
+  - load_model()        -> loads the trained MLP model
+  - build_onnx_schema() -> creates numeric input schema
+  - convert_model()     -> converts MLPRegressor to ONNX
+  - save_onnx_model()   -> writes the ONNX file to disk
 
 Run:
     python onnx/convert_to_onnx.py
@@ -26,13 +21,12 @@ Run:
 import logging
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 import joblib
 from onnx import ModelProto
 from skl2onnx import convert_sklearn
-from skl2onnx.common.data_types import FloatTensorType, StringTensorType
-from sklearn.pipeline import Pipeline
+from skl2onnx.common.data_types import FloatTensorType
+from sklearn.neural_network import MLPRegressor
 
 # Make `preprocessing` importable regardless of the caller's cwd.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -60,12 +54,17 @@ logger = logging.getLogger("hemagrid.convert_to_onnx")
 # --------------------------------------------------------------------------
 
 MODELS_DIR = PROJECT_ROOT / "models"
-PIPELINE_PATH = MODELS_DIR / "pipeline.pkl"
+
+# NPU deployment model (MLP only)
+MODEL_PATH = MODELS_DIR / "mlp_model.pkl"
+
+# Output ONNX file
 ONNX_MODEL_PATH = MODELS_DIR / "model.onnx"
 
-# Snapdragon's Hexagon NPU / QAIRT toolchain expects a reasonably mainstream
-# opset - 17 is well within ONNX Runtime's and QAIRT's supported range and
-# avoids pulling in operators only recent opsets define.
+# Number of features after preprocessing
+INPUT_FEATURE_COUNT = 28
+
+# Snapdragon's Hexagon NPU / QAIRT toolchain expects...
 TARGET_OPSET = 17
 
 
@@ -73,65 +72,52 @@ TARGET_OPSET = 17
 # Loading
 # --------------------------------------------------------------------------
 
-def load_pipeline(path: Path = PIPELINE_PATH) -> Pipeline:
-    """Load the fitted pipeline saved by training/train.py.
+def load_model(path: Path = MODEL_PATH) -> MLPRegressor:
+    """Load the trained MLP model for ONNX/NPU conversion."""
 
-    Args:
-        path: Path to the pipeline.pkl file.
-
-    Returns:
-        The fitted sklearn Pipeline (preprocessing + model).
-
-    Raises:
-        FileNotFoundError: If no pipeline has been trained/saved yet.
-    """
     if not path.exists():
         raise FileNotFoundError(
-            f"No trained pipeline found at {path}. Run training/train.py first."
+            f"No trained MLP model found at {path}. Run training/train.py first."
         )
-    logger.info("Loading pipeline from %s", path)
-    pipeline = joblib.load(path)
-    logger.info("Pipeline loaded: steps=%s", [name for name, _ in pipeline.steps])
-    return pipeline
+
+    logger.info("Loading MLP model from %s", path)
+
+    model = joblib.load(path)
+
+    logger.info(
+        "MLP model loaded: hidden_layers=%s",
+        model.hidden_layer_sizes,
+    )
+
+    return model
 
 
 # --------------------------------------------------------------------------
 # Schema construction
 # --------------------------------------------------------------------------
 
-def build_onnx_schema() -> List[Tuple[str, object]]:
-    """Derive the ONNX input schema directly from preprocessing.preprocess's
-    NUMERICAL_FEATURES / CATEGORICAL_FEATURES lists.
-
-    Deliberately NOT hardcoded: if a feature is added to or removed from
-    preprocessing.preprocess, this schema picks it up automatically on the
-    next conversion run, with no changes needed here.
-
-    Each column becomes its own named ONNX input of shape [None, 1]
-    (skl2onnx's standard convention for a ColumnTransformer operating on a
-    pandas DataFrame with heterogeneous dtypes per column):
-      - Numerical columns -> FloatTensorType (RandomForestRegressor and the
-        "passthrough" transformer both operate on float32 internally).
-      - Categorical columns -> StringTensorType (consumed by the
-        OneHotEncoder step inside the pipeline).
-
-    Returns:
-        A list of (column_name, onnx_type) tuples suitable for
-        skl2onnx.convert_sklearn's `initial_types` argument.
+def build_onnx_schema():
     """
+    Build ONNX input schema for Qualcomm NPU.
+
+    The preprocessing is handled separately.
+    ONNX receives only the transformed numeric feature vector.
+    """
+
     logger.info(
-        "Building ONNX input schema: %d numerical + %d categorical features",
-        len(NUMERICAL_FEATURES), len(CATEGORICAL_FEATURES),
+        "Building ONNX schema with %d float features",
+        INPUT_FEATURE_COUNT,
     )
 
-    schema: List[Tuple[str, object]] = [
-        (col, FloatTensorType([None, 1])) for col in NUMERICAL_FEATURES
-    ]
-    schema += [
-        (col, StringTensorType([None, 1])) for col in CATEGORICAL_FEATURES
-    ]
+    schema = [
+    (
+        "input",
+        FloatTensorType([1, INPUT_FEATURE_COUNT])
+    )
+]
 
-    logger.info("Schema built with %d total input columns.", len(schema))
+    logger.info("Schema built: input shape [1, %d]", INPUT_FEATURE_COUNT)
+
     return schema
 
 
@@ -139,32 +125,36 @@ def build_onnx_schema() -> List[Tuple[str, object]]:
 # Conversion
 # --------------------------------------------------------------------------
 
-def convert_pipeline(
-    pipeline: Pipeline, schema: List[Tuple[str, object]]
+def convert_model(
+    model: MLPRegressor,
+    schema,
 ) -> ModelProto:
-    """Convert the fitted sklearn Pipeline into an ONNX ModelProto.
-
-    Args:
-        pipeline: A fitted sklearn Pipeline (preprocessing + model).
-        schema: The ONNX input schema from build_onnx_schema().
-
-    Returns:
-        The converted ONNX ModelProto.
-
-    Raises:
-        RuntimeError: If skl2onnx conversion fails for any reason (wrapped
-            with context - the raw skl2onnx traceback is often unhelpful on
-            its own).
     """
-    logger.info("Starting ONNX conversion (target_opset=%d)...", TARGET_OPSET)
+    Convert only the trained MLP model into ONNX.
+
+    Preprocessing is intentionally excluded because Qualcomm
+    AI Hub / NPU requires numeric tensor inputs only.
+    """
+
+    logger.info(
+        "Starting ONNX conversion (target_opset=%d)...",
+        TARGET_OPSET,
+    )
+
     try:
         onnx_model = convert_sklearn(
-            pipeline, initial_types=schema, target_opset=TARGET_OPSET
+            model,
+            initial_types=schema,
+            target_opset=TARGET_OPSET,
         )
+
     except Exception as exc:
-        raise RuntimeError(f"skl2onnx conversion failed: {exc}") from exc
+        raise RuntimeError(
+            f"skl2onnx conversion failed: {exc}"
+        ) from exc
 
     logger.info("Conversion successful.")
+
     return onnx_model
 
 
@@ -197,9 +187,9 @@ def save_onnx_model(onnx_model: ModelProto, path: Path = ONNX_MODEL_PATH) -> Non
 
 def main() -> None:
     try:
-        pipeline = load_pipeline()
+        model = load_model()
         schema = build_onnx_schema()
-        onnx_model = convert_pipeline(pipeline, schema)
+        onnx_model = convert_model(model, schema)
         save_onnx_model(onnx_model)
     except (FileNotFoundError, RuntimeError, OSError) as exc:
         logger.error("ONNX conversion failed: %s", exc)
@@ -208,10 +198,11 @@ def main() -> None:
     print("\n" + "=" * 60)
     print("HemaGrid AI - ONNX Conversion Complete")
     print("=" * 60)
-    print(f"Source pipeline: {PIPELINE_PATH}")
+    print(f"Source model:    {MODEL_PATH}")
+    
     print(f"ONNX model:      {ONNX_MODEL_PATH}")
     print(f"Target opset:    {TARGET_OPSET}")
-    print(f"Input columns:   {len(NUMERICAL_FEATURES) + len(CATEGORICAL_FEATURES)}")
+    print(f"Input features:  {INPUT_FEATURE_COUNT}")
     print("=" * 60)
     print("Next: run onnx/verify_parity.py to confirm sklearn/ONNX prediction parity.")
 

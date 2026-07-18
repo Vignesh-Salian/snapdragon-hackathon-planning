@@ -57,7 +57,14 @@ logger = logging.getLogger("hemagrid.train")
 # --------------------------------------------------------------------------
 
 MODELS_DIR = PROJECT_ROOT / "models"
+
+# Full pipeline used by FastAPI inference
 PIPELINE_PATH = MODELS_DIR / "pipeline.pkl"
+
+# Separate artifacts for Qualcomm NPU deployment
+PREPROCESSOR_PATH = MODELS_DIR / "preprocessor.pkl"
+MODEL_PATH = MODELS_DIR / "mlp_model.pkl"
+
 FEATURE_IMPORTANCE_PATH = MODELS_DIR / "feature_importance.csv"
 
 # Prefixed "model__" per sklearn Pipeline convention, since the estimator
@@ -220,6 +227,46 @@ def save_pipeline(fitted_pipeline: Pipeline, path: Path = PIPELINE_PATH) -> None
         raise OSError(f"Failed to save pipeline to {path}: {exc}") from exc
     logger.info("Saved fitted pipeline -> %s", path)
 
+def save_npu_artifacts(
+    fitted_pipeline: Pipeline,
+    preprocessor_path: Path = PREPROCESSOR_PATH,
+    model_path: Path = MODEL_PATH,
+) -> None:
+    """
+    Save preprocessing and model separately for Qualcomm NPU deployment.
+
+    The complete sklearn pipeline is kept for backend inference,
+    while the MLP model alone is exported to ONNX for NPU execution.
+    """
+
+    try:
+        preprocessor = fitted_pipeline.named_steps["preprocessor"]
+        model = fitted_pipeline.named_steps["model"]
+
+        joblib.dump(
+            preprocessor,
+            preprocessor_path,
+        )
+
+        joblib.dump(
+            model,
+            model_path,
+        )
+
+    except OSError as exc:
+        raise OSError(
+            f"Failed saving NPU artifacts: {exc}"
+        ) from exc
+
+    logger.info(
+        "Saved NPU preprocessor -> %s",
+        preprocessor_path,
+    )
+
+    logger.info(
+        "Saved NPU model -> %s",
+        model_path,
+    )
 
 def save_feature_importance(
     fitted_pipeline: Pipeline,
@@ -275,6 +322,7 @@ def main() -> None:
         search = build_search(pipeline)
         best_pipeline, search_summary = train_model(search, X_train, y_train)
         metrics = evaluate_model(best_pipeline, X_test, y_test)
+
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         logger.error("Training failed: %s", exc)
         sys.exit(1)
@@ -290,13 +338,32 @@ def main() -> None:
     print("=" * 60)
 
     if metrics["r2"] < R2_TARGET:
-        logger.warning("Test R^2 (%.4f) is below the spec target of %.2f.", metrics["r2"], R2_TARGET)
+        logger.warning(
+            "Test R^2 (%.4f) is below the spec target of %.2f.",
+            metrics["r2"],
+            R2_TARGET,
+        )
     else:
-        logger.info("Test R^2 (%.4f) meets the spec target of %.2f.", metrics["r2"], R2_TARGET)
+        logger.info(
+            "Test R^2 (%.4f) meets the spec target of %.2f.",
+            metrics["r2"],
+            R2_TARGET,
+        )
 
     try:
+        # Save complete pipeline for FastAPI/backend inference
         save_pipeline(best_pipeline)
-        importance_df = save_feature_importance(best_pipeline, X_test, y_test)
+
+        # Save separate artifacts for Qualcomm NPU deployment
+        save_npu_artifacts(best_pipeline)
+
+        # Save feature importance for explainability
+        importance_df = save_feature_importance(
+            best_pipeline,
+            X_test,
+            y_test,
+        )
+
     except (OSError, ValueError) as exc:
         logger.error("Failed to save artifacts: %s", exc)
         sys.exit(1)
