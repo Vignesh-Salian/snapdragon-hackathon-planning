@@ -35,7 +35,15 @@ def init_db() -> None:
         c.execute("CREATE INDEX IF NOT EXISTS idx_enrolled_at ON donors(enrolled_at)")
 
 
+def purge_expired_donors(days: int = LOCKOUT_DAYS) -> None:
+    """Permanently delete donor records older than the 56-day lockout window for privacy compliance."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    with _conn() as c:
+        c.execute("DELETE FROM donors WHERE enrolled_at < ?", (cutoff,))
+
+
 def add_donor(name: str, landmarks: list[float]) -> int:
+    purge_expired_donors()  # Run auto-purge before inserting new records
     ts = datetime.now(timezone.utc).isoformat()
     with _conn() as c:
         cur = c.execute(
@@ -47,6 +55,7 @@ def add_donor(name: str, landmarks: list[float]) -> int:
 
 def recent_donors(days: int = LOCKOUT_DAYS) -> list[dict]:
     """Donors enrolled within the lockout window (the only ones worth comparing)."""
+    purge_expired_donors(days)  # Run auto-purge before fetching active records
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with _conn() as c:
         rows = c.execute(
