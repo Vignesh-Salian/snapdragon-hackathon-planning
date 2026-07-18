@@ -20,7 +20,8 @@ export default function Verification({ openAlert }: VerificationPageProps) {
   const activeOpenAlert = openAlert || context?.openAlert;
 
   const [query, setQuery] = useState("");
-  const [enrollName, setEnrollName] = useState("");
+  const [donorCounter, setDonorCounter] = useState(6);
+  const [enrollName, setEnrollName] = useState("Donor 6");
   const [b64Image, setB64Image] = useState("");
   const [fileName, setFileName] = useState("");
   const [liveLoading, setLiveLoading] = useState(false);
@@ -129,9 +130,13 @@ export default function Verification({ openAlert }: VerificationPageProps) {
     setEnrollStatus(null);
     try {
       const res = await enrollDonor(enrollName, b64Image);
-      setEnrollStatus(`Success! Enrolled with ID: ${res.id}`);
-      // Clear inputs
-      setEnrollName("");
+      setEnrollStatus(`Success! Enrolled '${enrollName}' with ID: ${res.id}`);
+      
+      // Auto-increment to next sequential donor name
+      const nextNum = donorCounter + 1;
+      setDonorCounter(nextNum);
+      setEnrollName(`Donor ${nextNum}`);
+      
       setFileName("");
       setB64Image("");
     } catch (err: any) {
