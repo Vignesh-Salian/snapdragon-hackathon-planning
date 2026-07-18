@@ -28,16 +28,20 @@ export default function Home({ openAlert, openAdjust }: HomeProps) {
   const [prediction, setPrediction] = useState(mockPred);
 
   useEffect(() => {
-    // Fetch live inventory from gateway database
-    getInventory("KMC-MANIPAL")
-      .then((data) => {
-        if (data && data.length > 0) {
-          setInventory(data);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load live inventory, falling back to mock:", err);
-      });
+    const fetchInventory = () => {
+      getInventory("KMC-MANIPAL")
+        .then((data) => {
+          if (data && data.length > 0) {
+            setInventory(data);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load live inventory, falling back to mock:", err);
+        });
+    };
+
+    // Initial fetch
+    fetchInventory();
 
     // Execute live prediction call through gateway delegate proxy to SFace/MLP on NPU
     const dummyFeatures = {
@@ -67,8 +71,14 @@ export default function Home({ openAlert, openAdjust }: HomeProps) {
         console.error("Failed to fetch live prediction, falling back to mock:", err);
       });
 
+    // Listen to live inventory updates from AdjustModal
+    window.addEventListener("inventory-updated", fetchInventory);
+
     const t = setTimeout(() => setLoading(false), 700);
-    return () => clearTimeout(t);
+    return () => {
+      window.removeEventListener("inventory-updated", fetchInventory);
+      clearTimeout(t);
+    };
   }, []);
 
   // Fleet health — derived purely from existing coldBoxes / alertFeed mock arrays.
