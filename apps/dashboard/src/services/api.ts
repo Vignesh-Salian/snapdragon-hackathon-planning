@@ -134,6 +134,16 @@ export function enrollDonor(name: string, imageB64: string): Promise<{ id: numbe
   });
 }
 
+export interface EnrolledDonor {
+  id: number;
+  name: string;
+  enrolled_at: string;
+}
+
+export function getRecentDonors(): Promise<EnrolledDonor[]> {
+  return req<EnrolledDonor[]>("/api/v1/donor/recent-delegate");
+}
+
 export function health(): Promise<{ status: string }> {
   return req("/health");
 }
