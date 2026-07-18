@@ -18,15 +18,18 @@ from typing import Optional
 
 import numpy as np
 import onnxruntime as ort
+import joblib
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from preprocessing.preprocess import CATEGORICAL_FEATURES, NUMERICAL_FEATURES  # noqa: E402
+from preprocessing.preprocess import ALL_FEATURES, CATEGORICAL_FEATURES, NUMERICAL_FEATURES  # noqa: E402
 
 logger = logging.getLogger("hemagrid.predict")
 
+PREPROCESSOR_PATH = PROJECT_ROOT / "models" / "preprocessor.pkl"
 ONNX_MODEL_PATH = PROJECT_ROOT / "models" / "model.onnx"
 FEATURE_IMPORTANCE_PATH = PROJECT_ROOT / "models" / "feature_importance.csv"
 SAFETY_FACTOR = 1.5  # recommended inventory = demand * safety factor
@@ -35,14 +38,20 @@ SAFETY_FACTOR = 1.5  # recommended inventory = demand * safety factor
 class DemandPredictor:
     """Wraps an ONNX Runtime session; picks NPU when available, CPU otherwise."""
 
-    def __init__(self, model_path: Path = ONNX_MODEL_PATH):
+    def __init__(self, model_path: Path = ONNX_MODEL_PATH, preprocessor_path: Path = PREPROCESSOR_PATH):
         if not model_path.exists():
             raise FileNotFoundError(
                 f"No ONNX model at {model_path}. Run training/train.py then "
                 f"onnx/convert_to_onnx.py first."
             )
+        if not preprocessor_path.exists():
+            raise FileNotFoundError(
+                f"No preprocessor found at {preprocessor_path}. Run training/train.py first."
+            )
         self.session, self.provider = self._make_session(model_path)
         logger.info("ONNX session ready on provider: %s", self.provider)
+        logger.info("Loading preprocessor from %s", preprocessor_path)
+        self.preprocessor = joblib.load(preprocessor_path)
         self._top_features = self._load_top_features()
 
     @staticmethod
@@ -78,16 +87,16 @@ class DemandPredictor:
             return True  # provider is QNN and we can't introspect further
         return any("QNN" in str(getattr(d, "ep_name", d)) for d in get_devices())
 
-    def _build_inputs(self, features: dict) -> dict:
-        inputs = {}
-        for col in NUMERICAL_FEATURES:
-            inputs[col] = np.array([[float(features[col])]], dtype=np.float32)
-        for col in CATEGORICAL_FEATURES:
-            inputs[col] = np.array([[str(features[col])]], dtype=object)
-        return inputs
-
     def predict_units(self, features: dict) -> float:
-        outputs = self.session.run(None, self._build_inputs(features))
+        # Convert dictionary to DataFrame and filter/order features properly
+        df = pd.DataFrame([features])
+        df = df[ALL_FEATURES]
+        
+        # Transform categorical and numerical features
+        processed = self.preprocessor.transform(df).astype(np.float32)
+        
+        # Run ONNX session with the float32 feature tensor
+        outputs = self.session.run(None, {"input": processed})
         return max(0.0, float(np.ravel(outputs[0])[0]))
 
     def _load_top_features(self, n: int = 3) -> list[str]:

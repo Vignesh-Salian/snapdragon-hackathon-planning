@@ -61,6 +61,7 @@ logger = logging.getLogger("hemagrid.verify_parity")
 
 MODELS_DIR = PROJECT_ROOT / "models"
 PIPELINE_PATH = MODELS_DIR / "pipeline.pkl"
+PREPROCESSOR_PATH = MODELS_DIR / "preprocessor.pkl"
 ONNX_MODEL_PATH = MODELS_DIR / "model.onnx"
 
 N_SAMPLES = 100
@@ -73,21 +74,26 @@ RANDOM_STATE = 42
 # Loading
 # --------------------------------------------------------------------------
 
-def load_artifacts() -> Tuple[Pipeline, ort.InferenceSession, pd.DataFrame, pd.Series]:
-    """Load the sklearn pipeline, the ONNX Runtime session, and the test split.
+def load_artifacts() -> Tuple[Pipeline, object, ort.InferenceSession, pd.DataFrame, pd.Series]:
+    """Load the sklearn pipeline, preprocessor, ONNX session, and test split.
 
     Returns:
         pipeline: The fitted sklearn Pipeline.
+        preprocessor: The fitted sklearn ColumnTransformer preprocessor.
         session: An ONNX Runtime InferenceSession over model.onnx.
         X_test: Raw (unencoded) test features from load_and_preprocess_data().
         y_test: Test targets.
 
     Raises:
-        FileNotFoundError: If pipeline.pkl or model.onnx is missing.
+        FileNotFoundError: If pipeline.pkl, preprocessor.pkl or model.onnx is missing.
     """
     if not PIPELINE_PATH.exists():
         raise FileNotFoundError(
             f"No trained pipeline found at {PIPELINE_PATH}. Run training/train.py first."
+        )
+    if not PREPROCESSOR_PATH.exists():
+        raise FileNotFoundError(
+            f"No preprocessor found at {PREPROCESSOR_PATH}. Run training/train.py first."
         )
     if not ONNX_MODEL_PATH.exists():
         raise FileNotFoundError(
@@ -97,13 +103,16 @@ def load_artifacts() -> Tuple[Pipeline, ort.InferenceSession, pd.DataFrame, pd.S
     logger.info("Loading sklearn pipeline from %s", PIPELINE_PATH)
     pipeline = joblib.load(PIPELINE_PATH)
 
+    logger.info("Loading preprocessor from %s", PREPROCESSOR_PATH)
+    preprocessor = joblib.load(PREPROCESSOR_PATH)
+
     logger.info("Loading ONNX Runtime session from %s", ONNX_MODEL_PATH)
     session = ort.InferenceSession(str(ONNX_MODEL_PATH))
 
     logger.info("Loading test split via preprocessing.preprocess...")
     _, X_test, _, y_test, _ = load_and_preprocess_data()
 
-    return pipeline, session, X_test, y_test
+    return pipeline, preprocessor, session, X_test, y_test
 
 
 # --------------------------------------------------------------------------
@@ -135,12 +144,13 @@ def build_onnx_inputs(sample: pd.DataFrame) -> Dict[str, np.ndarray]:
 # --------------------------------------------------------------------------
 
 def run_predictions(
-    pipeline: Pipeline, session: ort.InferenceSession, sample: pd.DataFrame
+    pipeline: Pipeline, preprocessor: object, session: ort.InferenceSession, sample: pd.DataFrame
 ) -> Tuple[np.ndarray, np.ndarray, float]:
     """Run predictions through both sklearn and ONNX Runtime on the same sample.
 
     Args:
         pipeline: The fitted sklearn Pipeline.
+        preprocessor: The fitted preprocessor.
         session: The ONNX Runtime InferenceSession.
         sample: A slice of X_test (raw, unencoded features).
 
@@ -164,12 +174,14 @@ def run_predictions(
     output_name = session.get_outputs()[0].name
 
     try:
+        # Preprocess features to float32 matrix
+        processed_all = preprocessor.transform(sample).astype(np.float32)
+
         for i in range(len(sample)):
-            row = sample.iloc[[i]]
-            onnx_inputs = build_onnx_inputs(row)
+            row_input = processed_all[[i]] # shape (1, num_features)
 
             start = time.perf_counter()
-            result = session.run([output_name], onnx_inputs)
+            result = session.run([output_name], {"input": row_input})
             latencies_ms.append((time.perf_counter() - start) * 1000)
 
             onnx_preds[i] = float(np.asarray(result[0]).reshape(-1)[0])
@@ -260,7 +272,7 @@ def print_report(
 
 def main() -> None:
     try:
-        pipeline, session, X_test, y_test = load_artifacts()
+        pipeline, preprocessor, session, X_test, y_test = load_artifacts()
     except FileNotFoundError as exc:
         logger.error("Verification failed: %s", exc)
         sys.exit(1)
@@ -272,7 +284,7 @@ def main() -> None:
     sample = X_test.iloc[sample_indices].reset_index(drop=True)
 
     try:
-        sklearn_preds, onnx_preds, avg_latency_ms = run_predictions(pipeline, session, sample)
+        sklearn_preds, onnx_preds, avg_latency_ms = run_predictions(pipeline, preprocessor, session, sample)
     except RuntimeError as exc:
         logger.error("Verification failed: %s", exc)
         sys.exit(1)
