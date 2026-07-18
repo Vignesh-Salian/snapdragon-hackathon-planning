@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Droplet, Thermometer, Fingerprint, HeartPulse, Plus, Battery } from "lucide-react";
 import { STATE, ACCENT } from "../types";
-import { bloodInventory, coldBoxes, alertFeed, mockPrediction } from "../mocks/data";
+import { bloodInventory as mockBloodInventory, coldBoxes, alertFeed, mockPrediction as mockPred } from "../mocks/data";
+import { getInventory, predictDemand } from "../services/api";
 import Glass from "../components/Glass";
 import StatePill from "../components/StatePill";
 import PredictionPanel from "../components/PredictionPanel";
@@ -23,7 +24,49 @@ export default function Home({ openAlert, openAdjust }: HomeProps) {
   const activeOpenAdjust = openAdjust || context?.openAdjust;
 
   const [loading, setLoading] = useState(true);
+  const [inventory, setInventory] = useState(mockBloodInventory);
+  const [prediction, setPrediction] = useState(mockPred);
+
   useEffect(() => {
+    // Fetch live inventory from gateway database
+    getInventory("KMC-MANIPAL")
+      .then((data) => {
+        if (data && data.length > 0) {
+          setInventory(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load live inventory, falling back to mock:", err);
+      });
+
+    // Execute live prediction call through gateway delegate proxy to SFace/MLP on NPU
+    const dummyFeatures = {
+      hospital_id: 1,
+      hospital_type: "Trauma",
+      city_region: "Urban",
+      blood_type: "O+",
+      season: "Monsoon",
+      temperature_c: 31.4,
+      rainfall_mm: 112.0,
+      dengue_cases_weekly: 52.0,
+      road_accidents: 21.0,
+      emergency_cases: 13.0,
+      scheduled_surgeries: 9.0,
+      holiday: 0,
+      blood_donation_camp: 1,
+      current_inventory: 80.0,
+      day_of_week: 2,
+      month: 7
+    };
+
+    predictDemand(dummyFeatures)
+      .then((data) => {
+        setPrediction(data);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch live prediction, falling back to mock:", err);
+      });
+
     const t = setTimeout(() => setLoading(false), 700);
     return () => clearTimeout(t);
   }, []);
@@ -76,7 +119,7 @@ export default function Home({ openAlert, openAdjust }: HomeProps) {
             </button>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 animate-none">
-            {bloodInventory.map((b) => {
+            {inventory.map((b) => {
               const s = STATE[b.state];
               const pct = Math.round((b.units / b.cap) * 100);
               return (
@@ -119,7 +162,7 @@ export default function Home({ openAlert, openAdjust }: HomeProps) {
       </div>
 
       {/* Explainable AI / demand forecast panel — new required section */}
-      <PredictionPanel data={mockPrediction} />
+      <PredictionPanel data={prediction} />
 
       {/* Cold box status row */}
       <Glass className="p-5 animate-none">
