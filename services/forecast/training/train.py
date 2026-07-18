@@ -63,14 +63,19 @@ FEATURE_IMPORTANCE_PATH = MODELS_DIR / "feature_importance.csv"
 # Prefixed "model__" per sklearn Pipeline convention, since the estimator
 # lives at pipeline.named_steps["model"] (an MLPRegressor — see preprocess.py).
 PARAM_DISTRIBUTIONS = {
-    "model__hidden_layer_sizes": [(64, 32), (128, 64), (64,), (128, 64, 32)],
-    "model__alpha": [1e-4, 1e-3, 1e-2],
-    "model__learning_rate_init": [1e-3, 5e-3],
+    "model__hidden_layer_sizes": [
+        (128, 64), 
+        (128, 64, 32), 
+        (256, 128, 64),
+        (256, 128, 64, 32)
+    ],
+    "model__alpha": [1e-3, 5e-3, 1e-2, 5e-2, 1e-1], # Added higher alpha regularization to prevent overfitting
+    "model__learning_rate_init": [1e-3, 3e-3, 5e-3],
 }
 
 SEARCH_CONFIG = dict(
-    cv=3,
-    n_iter=6,
+    cv=5,            # Increased cross-validation folds from 3 to 5 for better generalization
+    n_iter=15,       # Increased search iterations from 6 to 15 to find a better configuration
     random_state=42,
     n_jobs=-1,
     scoring="r2",
