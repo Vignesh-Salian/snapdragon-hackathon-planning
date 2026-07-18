@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Search, SearchX, User, ShieldAlert, Camera, CheckCircle, XCircle } from "lucide-react";
+import { Search, SearchX, User, ShieldAlert, Camera, CheckCircle, XCircle, Video } from "lucide-react";
 import { STATE, CONFIDENCE_THRESHOLD, ACCENT, type DonorVerifyResponse } from "../types";
 import { verificationQueue } from "../mocks/data";
 import { verifyDonor, enrollDonor } from "../services/api";
@@ -27,9 +27,68 @@ export default function Verification({ openAlert }: VerificationPageProps) {
   const [liveResult, setLiveResult] = useState<DonorVerifyResponse | null>(null);
   const [enrollStatus, setEnrollStatus] = useState<string | null>(null);
 
-  const filtered = verificationQueue.filter((v) =>
-    v.response.matched_donor.name.toLowerCase().includes(query.toLowerCase())
-  );
+  // Webcam integration states
+  const [isWebcamActive, setIsWebcamActive] = useState(false);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    // Cleanup stream on component unmount
+    return () => {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [webcamStream]);
+
+  const startWebcam = async () => {
+    setLiveResult(null);
+    setEnrollStatus(null);
+    setB64Image("");
+    setFileName("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 320, height: 240, facingMode: "user" }
+      });
+      setWebcamStream(stream);
+      setIsWebcamActive(true);
+      
+      // Delay slightly to ensure video element is rendered
+      setTimeout(() => {
+        const video = document.getElementById("webcamVideo") as HTMLVideoElement;
+        if (video) {
+          video.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error("Webcam error:", err);
+      alert("Failed to access camera. Please allow camera permissions.");
+    }
+  };
+
+  const stopWebcam = () => {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach((track) => track.stop());
+      setWebcamStream(null);
+    }
+    setIsWebcamActive(false);
+  };
+
+  const capturePhoto = () => {
+    const video = document.getElementById("webcamVideo") as HTMLVideoElement;
+    const canvas = document.getElementById("webcamCanvas") as HTMLCanvasElement;
+    if (video && canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg");
+        setB64Image(dataUrl.split(",")[1]);
+        setFileName("webcam_capture.jpg");
+        stopWebcam();
+      }
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,6 +143,10 @@ export default function Verification({ openAlert }: VerificationPageProps) {
     }
   };
 
+  const filtered = verificationQueue.filter((v: any) =>
+    v.response.matched_donor.name.toLowerCase().includes(query.toLowerCase())
+  );
+
   return (
     <div className="space-y-6 p-6 animate-none">
       {/* Live Biometric Test Desk */}
@@ -94,14 +157,49 @@ export default function Verification({ openAlert }: VerificationPageProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="mb-4">
-              <label className="mb-1.5 block text-xs" style={{ color: "#8A97A6" }}>Select Donor Photo</label>
-              <div 
-                onClick={() => document.getElementById("liveFaceFile")?.click()}
-                className="border-2 border-dashed border-[rgba(255,255,255,0.08)] hover:border-[#2fd9c4] rounded-lg p-6 text-center cursor-pointer transition-colors"
-              >
-                <span className="text-xs text-white">{fileName || "Click to upload donor selfie"}</span>
-                <input type="file" id="liveFaceFile" accept="image/*" className="hidden" onChange={handleFileChange} />
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-xs" style={{ color: "#8A97A6" }}>Donor Photo Source</label>
+                <div className="flex gap-2">
+                  {!isWebcamActive && (
+                    <button 
+                      onClick={startWebcam} 
+                      className="flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold text-white border border-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.05)] cursor-pointer"
+                    >
+                      <Video size={10} /> Open Camera
+                    </button>
+                  )}
+                  {isWebcamActive && (
+                    <button 
+                      onClick={stopWebcam} 
+                      className="rounded px-2 py-1 text-[10px] font-semibold text-[#f87171] border border-[rgba(248,113,113,0.15)] hover:bg-[rgba(248,113,113,0.05)] cursor-pointer"
+                    >
+                      Close Camera
+                    </button>
+                  )}
+                </div>
               </div>
+              
+              {isWebcamActive ? (
+                <div className="relative rounded-lg border overflow-hidden flex flex-col items-center bg-[#06080c]" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+                  <video id="webcamVideo" autoPlay playsInline muted className="w-full max-h-[160px] object-cover bg-black" />
+                  <button 
+                    onClick={capturePhoto} 
+                    className="absolute bottom-2 rounded-full px-3 py-1.5 text-[10px] font-bold text-black cursor-pointer"
+                    style={{ background: ACCENT }}
+                  >
+                    Capture Photo
+                  </button>
+                  <canvas id="webcamCanvas" className="hidden" />
+                </div>
+              ) : (
+                <div 
+                  onClick={() => document.getElementById("liveFaceFile")?.click()}
+                  className="border-2 border-dashed border-[rgba(255,255,255,0.08)] hover:border-[#2fd9c4] rounded-lg p-6 text-center cursor-pointer transition-colors"
+                >
+                  <span className="text-xs text-white">{fileName || "Click to upload, or use camera above"}</span>
+                  <input type="file" id="liveFaceFile" accept="image/*" className="hidden" onChange={handleFileChange} />
+                </div>
+              )}
             </div>
             
             <div className="flex gap-3">
